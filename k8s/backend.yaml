@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: orderflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: <dockerhub-user>/orderflow-backend:1.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgres:5432/orders
+        - name: SPRING_DATASOURCE_USERNAME
+          value: orderuser
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: orderpass

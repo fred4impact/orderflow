@@ -2,6 +2,8 @@
 
 > **End-to-End Order Management Platform with Complete DevOps Pipeline**
 
+![OrderFlow Homepage](screenshots/homepage.png)
+
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)

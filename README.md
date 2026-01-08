@@ -186,7 +186,7 @@ The fastest way to get started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/orderflow.git
+git clone https://github.com/fred4impact/orderflow.git
 cd orderflow
 
 # Start all services
@@ -254,44 +254,7 @@ chmod +x build-and-push.sh
 ```
 
 ---
-
-## 📁 Project Structure
-
-```
-orderflow/
-├── backend/                    # Spring Boot backend
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/           # Java source code
-│   │   │   └── resources/      # Configuration files
-│   │   └── test/               # Test files
-│   └── Dockerfile              # Backend Dockerfile
-│
-├── frontend/                   # React frontend
-│   ├── src/
-│   │   ├── api/                # API client
-│   │   ├── components/         # React components
-│   │   ├── pages/              # Page components
-│   │   ├── types/              # TypeScript types
-│   │   └── utils/              # Utility functions
-│   ├── Dockerfile              # Frontend Dockerfile
-│   └── nginx.conf              # Nginx configuration
-│
-├── docs/                       # Documentation
-│   ├── DOCKER_DEPLOYMENT.md    # Docker deployment guide
-│   ├── helm-steps.md           # Kubernetes/Helm guide
-│   └── ...
-│
-├── docker-compose.yml          # Docker Compose configuration
-├── Dockerfile                  # Root Dockerfile (backend)
-├── pom.xml                     # Maven configuration
-├── build-and-push.sh           # Build and push script
-├── Jenkinsfile                 # Jenkins pipeline
-├── .github/                    # GitHub Actions workflows
-└── README.md                   # This file
-```
-
----
+![OrderFlow Homepage](screenshots/orderapi.png)
 
 ## 📚 API Documentation
 
@@ -474,8 +437,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 📞 Support & Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/orderflow/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/orderflow/discussions)
+- **Issues**: [GitHub Issues](https://github.com/fred4impact/orderflow.git/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/fred4impact/orderflow/discussions)
 - **Email**: support@orderflow.io
 
 ---

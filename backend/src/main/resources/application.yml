@@ -12,7 +12,7 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: validate  # Use 'update' for dev, 'validate' for prod
+      ddl-auto: create  # Use 'update' for dev, 'validate' for prod
     show-sql: false
     properties:
       hibernate:

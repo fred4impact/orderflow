@@ -15,6 +15,18 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: runtesting/order-frontend:1.1
+        image: runtesting/order-frontend:1.2
         ports:
         - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5

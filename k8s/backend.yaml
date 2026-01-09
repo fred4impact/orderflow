@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: <dockerhub-user>/orderflow-backend:1.0
+        image: runtesting/ordeflow-backend:1.0
         ports:
         - containerPort: 8080
         env:

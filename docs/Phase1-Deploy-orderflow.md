@@ -56,7 +56,31 @@ kubectl create namespace orderflow
 
 # Build & Push Docker Images
 cd backend
+
 docker build -t <dockerhub-user>/orderflow-backend:1.0 .
 docker push <dockerhub-user>/orderflow-backend:1.0
 
+cd frontend
+docker build -t <dockerhub-user>/orderflow-frontend:1.0 .
+docker push <dockerhub-user>/orderflow-frontend:1.0
+
+
 ``` 
+## Deploy PostgreSQL (Simple, Non-Prod)
+
+cd into k8s
+## apply 
+
+kubectl apply -f postgres.yaml
+kubectl apply -f postgres-service.yaml
+
+## check logs 
+kubectl logs deploy/backend -n orderflow
+
+## Next deploy frontend  by applying 
+
+kubectl apply -f frontend.yaml
+kubectl apply -f frontend-service.yaml
+
+## to see the application use browser 
+http://<WORKER_PUBLIC_IP>:30080

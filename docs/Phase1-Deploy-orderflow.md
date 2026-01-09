@@ -89,3 +89,5 @@ kubectl apply -f frontend-service.yaml
 
 ## to see the application use browser 
 http://<WORKER_PUBLIC_IP>:30080
+
+http//44.210.23.194:30080

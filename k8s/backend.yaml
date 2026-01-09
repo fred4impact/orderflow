@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: runtesting/ordeflow-backend:1.1
+        image: runtesting/ordeflow-backend:1.2
         ports:
         - containerPort: 8080
         env:
@@ -25,3 +25,5 @@ spec:
           value: orderuser
         - name: SPRING_DATASOURCE_PASSWORD
           value: orderpass
+        - name: CORS_ALLOW_ALL_ORIGINS
+          value: "true"

@@ -71,8 +71,13 @@ docker push <dockerhub-user>/orderflow-frontend:1.0
 cd into k8s
 ## apply 
 
+***** DEPLOY DATABASE *****
 kubectl apply -f postgres.yaml
 kubectl apply -f postgres-service.yaml
+
+***** DEPLOY BACKEND *****
+kubectl apply -f backend.yaml
+kubectl apply -f backend-service.yaml
 
 ## check logs 
 kubectl logs deploy/backend -n orderflow

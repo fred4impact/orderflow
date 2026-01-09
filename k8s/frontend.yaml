@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: runtesting/orderflow-frontend:1.1
+        image: runtesting/orderflow-frontend:latest
         ports:
         - containerPort: 80

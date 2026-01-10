@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: orderflow
+  namespace: argocd
+  # Optional: Add labels for better organization
+  labels:
+    app: orderflow
+    environment: production
+spec:
+  project: default
+  
+  # Source: Git repository containing Kubernetes manifests
+  source:
+    repoURL: https://github.com/fred4impact/orderflow.git  # TODO: Replace with your Git repository URL
+    targetRevision: main  # Branch name (main, master, etc.)
+    path: k8s  # Path to manifests directory in the repository
+  
+  # Destination: Where to deploy the application
+  destination:
+    server: https://kubernetes.default.svc  # Current cluster
+    namespace: orderflow  # Target namespace
+  
+  # Sync Policy: Configure automatic synchronization
+  syncPolicy:
+    automated:
+      prune: true      # Delete resources that are no longer in Git
+      selfHeal: true   # Automatically sync when cluster state drifts from Git
+      allowEmpty: false  # Don't allow apps with no resources
+    syncOptions:
+      - CreateNamespace=true  # Create namespace if it doesn't exist
+      - PrunePropagationPolicy=foreground  # Wait for resources to be deleted
+      - PruneLast=true  # Prune resources last during sync
+    retry:
+      limit: 5  # Number of failed sync attempt retries
+      backoff:
+        duration: 5s  # Duration to wait before retry
+        factor: 2  # Factor to multiply duration by
+        maxDuration: 3m  # Maximum duration to wait

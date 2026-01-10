@@ -154,6 +154,28 @@ kubectl run -it --rm debug --image=curlimages/curl --restart=Never -n orderflow 
 # curl http://frontend.orderflow.svc.cluster.local:80/health
 ```
 
+## 7.1. Access Swagger/OpenAPI Documentation
+
+```bash
+# Port forward backend service to access Swagger UI
+kubectl port-forward svc/backend -n orderflow 8080:8080
+
+# Keep the port-forward running, then open in browser:
+# Swagger UI: http://localhost:8080/swagger-ui.html
+# API Docs (JSON): http://localhost:8080/api-docs
+# API Docs (YAML): http://localhost:8080/api-docs.yaml
+
+# Alternative: Port forward directly to pod (if service not available)
+BACKEND_POD=$(kubectl get pods -n orderflow -l app=backend -o jsonpath='{.items[0].metadata.name}')
+kubectl port-forward pod/$BACKEND_POD -n orderflow 8080:8080
+
+# Access Swagger from within cluster (using debug pod)
+kubectl run -it --rm swagger-test --image=curlimages/curl --restart=Never -n orderflow -- sh
+# Inside pod:
+# curl http://backend.orderflow.svc.cluster.local:8080/swagger-ui.html
+# curl http://backend.orderflow.svc.cluster.local:8080/api-docs
+```
+
 ---
 
 ## 8. Check Configuration
@@ -311,6 +333,21 @@ kubectl get namespace orderflow
 
 # Create namespace if missing
 kubectl create namespace orderflow
+```
+
+## 14.1. Quick Access to Swagger UI
+
+```bash
+# One-liner to access Swagger (run in background)
+kubectl port-forward svc/backend -n orderflow 8080:8080 &
+
+# Then open in browser:
+# Swagger UI: http://localhost:8080/swagger-ui.html
+# API Docs: http://localhost:8080/api-docs
+
+# Stop port-forward when done
+# Find process: ps aux | grep port-forward
+# Kill: kill <PID> or pkill -f "port-forward"
 ```
 
 ---

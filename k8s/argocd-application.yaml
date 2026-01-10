@@ -13,7 +13,7 @@ spec:
   # Source: Git repository containing Kubernetes manifests
   source:
     repoURL: https://github.com/fred4impact/orderflow.git  # TODO: Replace with your Git repository URL
-    targetRevision: main  # Branch name (main, master, etc.)
+    targetRevision: master  # Branch name (main, master, etc.)
     path: k8s  # Path to manifests directory in the repository
   
   # Destination: Where to deploy the application

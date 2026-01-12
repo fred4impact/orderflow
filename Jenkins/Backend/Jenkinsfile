@@ -1,0 +1,124 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk-17'
+        maven 'maven-3.9.5'
+    }
+
+    environment {
+        APP_NAME = 'orderflow-backend'
+        DOCKER_IMAGE = "orderflow-backend:${BUILD_NUMBER}"
+        SONAR_HOST_URL = 'http://sonarqube:9000'
+        SONAR_TOKEN = credentials('sonar-token')
+    }
+
+    stages {
+
+        stage('Build & Unit Test') {
+            steps {
+                sh 'mvn clean test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+
+        stage('Code Coverage') {
+            steps {
+                sh 'mvn jacoco:report'
+            }
+            post {
+                always {
+                    publishHTML([
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        reportName: 'JaCoCo Coverage'
+                    ])
+                }
+            }
+        }
+
+        stage('SCA - Dependency Check') {
+            steps {
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+            post {
+                always {
+                    publishHTML([
+                        reportDir: 'target',
+                        reportFiles: 'dependency-check-report.html',
+                        reportName: 'OWASP Dependency Check'
+                    ])
+                }
+            }
+        }
+
+        stage('SAST - SpotBugs & SonarQube') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                      mvn spotbugs:spotbugs sonar:sonar \
+                        -Dsonar.projectKey=orderflow-backend \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN}
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE .'
+            }
+        }
+
+        stage('Image Scan - Trivy') {
+            steps {
+                sh """
+                  docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  aquasec/trivy image \
+                  --severity CRITICAL,HIGH \
+                  --exit-code 1 \
+                  $DOCKER_IMAGE
+                """
+            }
+        }
+
+        stage('Smoke Test') {
+            steps {
+                sh """
+                  docker run -d -p 8080:8080 --name order-test $DOCKER_IMAGE
+                  sleep 20
+                  curl -f http://localhost:8080/actuator/health
+                """
+            }
+            post {
+                always {
+                    sh 'docker rm -f order-test || true'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Backend DevSecOps Pipeline Passed"
+        }
+        failure {
+            echo "❌ Backend DevSecOps Pipeline Failed"
+        }
+    }
+}

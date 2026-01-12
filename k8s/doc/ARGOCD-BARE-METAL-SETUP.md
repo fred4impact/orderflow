@@ -131,6 +131,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 2. **Access ArgoCD:**
    ```
    https://<WORKER_NODE_IP>:<NODEPORT>
+   https://44.210.23.194:30173
+   
    ```
    
    For example, if your worker node IP is `44.210.23.194` and NodePort is `30443`:
@@ -398,7 +400,112 @@ kubectl get application orderflow -n argocd -o yaml
 
 ---
 
-## Step 10: Security Considerations
+## Step 10: View Your Deployed Application
+
+After ArgoCD successfully deploys your application, you can access it via the ingress that was configured.
+
+### 10.1 Verify Application is Running
+
+First, verify all pods are running:
+
+```bash
+kubectl get pods -n orderflow
+```
+
+You should see:
+- `frontend-xxx` - Frontend pod(s)
+- `backend-xxx` - Backend pod(s)
+- `postgres-xxx` - Database pod(s)
+
+### 10.2 Access the Application
+
+Since you're using bare-metal Kubernetes with ingress, access the application using:
+
+**Option A: Using Domain Name (Recommended)**
+
+1. **Ensure `/etc/hosts` is configured:**
+   ```bash
+   cat /etc/hosts | grep orderflow
+   # Should show: 44.210.23.194 orderflow.local
+   ```
+
+2. **Get the Ingress NodePort:**
+   ```bash
+   kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}'
+   ```
+   
+   This should return `31641` (or your NodePort number).
+
+3. **Access in browser:**
+   ```
+   http://orderflow.local:31641
+   ```
+
+   **Note:** If using Firefox with DNS over HTTPS, use the FlexHeaders extension:
+   - Set `Host` header to: `orderflow.local`
+   - Access: `http://44.210.23.194:31641`
+
+**Option B: Using Direct IP with Host Header**
+
+If you prefer to use the IP directly:
+
+1. **Use browser extension** (FlexHeaders for Firefox, ModHeader for Chrome):
+   - Add header: `Host: orderflow.local`
+   - Access: `http://44.210.23.194:31641`
+
+2. **Or test with curl:**
+   ```bash
+   curl -H "Host: orderflow.local" http://44.210.23.194:31641/
+   ```
+
+### 10.3 Verify Application Endpoints
+
+- **Frontend:** `http://orderflow.local:31641/`
+- **Backend API:** `http://orderflow.local:31641/api/actuator/health`
+- **Backend API (Orders):** `http://orderflow.local:31641/api/v1/orders`
+
+### 10.4 Check Application Status in ArgoCD UI
+
+1. **Access ArgoCD UI:**
+   ```
+   https://44.210.23.194:30173
+   ```
+   (Use your ArgoCD NodePort)
+
+2. **Login:**
+   - Username: `admin`
+   - Password: (your ArgoCD password)
+
+3. **View Application:**
+   - Click on the `orderflow` application
+   - You'll see:
+     - Application status (Synced, Healthy, etc.)
+     - Resource tree showing all deployed resources
+     - Sync history
+     - Application details
+
+### 10.5 Quick Verification Commands
+
+```bash
+# Check all resources in orderflow namespace
+kubectl get all -n orderflow
+
+# Check ingress
+kubectl get ingress -n orderflow
+
+# Check application status via ArgoCD CLI
+argocd app get orderflow
+
+# Test frontend
+curl -H "Host: orderflow.local" http://44.210.23.194:31641/
+
+# Test backend health
+curl -H "Host: orderflow.local" http://44.210.23.194:31641/api/actuator/health
+```
+
+---
+
+## Step 11: Security Considerations
 
 ### 10.1 Update Admin Password
 

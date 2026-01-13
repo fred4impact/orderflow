@@ -1,8 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'
-        }
+    agent any
+
+    tools {
+        nodejs 'node-18'
     }
 
     environment {
@@ -20,7 +20,7 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                sh 'npm test -- --ci --coverage || true'
+                sh 'npm test -- --ci --coverage'
             }
             post {
                 always {
@@ -43,24 +43,24 @@ pipeline {
 
         stage('Image Scan - Trivy') {
             steps {
-                sh '''
+                sh """
                   docker run --rm \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   aquasec/trivy image \
                   --severity CRITICAL,HIGH \
-                  --exit-code 0 \
+                  --exit-code 1 \
                   $DOCKER_IMAGE
-                '''
+                """
             }
         }
 
         stage('Smoke Test') {
             steps {
-                sh '''
-                  docker run -d -P --name ui-test $DOCKER_IMAGE
+                sh """
+                  docker run -d -p 3000:80 --name ui-test $DOCKER_IMAGE
                   sleep 10
-                  docker port ui-test
-                '''
+                  curl -f http://localhost:3000
+                """
             }
             post {
                 always {

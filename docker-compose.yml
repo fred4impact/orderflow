@@ -21,7 +21,7 @@ services:
 
   order-service:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: order-service-app
     environment:

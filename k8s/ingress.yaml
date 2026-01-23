@@ -4,8 +4,6 @@ metadata:
   name: orderflow-ingress
   namespace: orderflow
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /api/$1
-    nginx.ingress.kubernetes.io/use-regex: "true"
     # CORS configuration
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
@@ -19,6 +17,13 @@ spec:
     - host: orderflow.local
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:
@@ -26,10 +31,3 @@ spec:
                 name: frontend
                 port:
                   number: 80
-          - path: /api/(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: backend
-                port:
-                  number: 8080

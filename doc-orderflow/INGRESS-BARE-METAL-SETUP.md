@@ -297,6 +297,8 @@ If you're using Firefox with DNS over HTTPS (DoH) enabled, Firefox may bypass `/
    For example:
    ```
    http://44.210.23.194:31641
+
+   http://172.31.64.54:31641
    ```
 
    The extension will automatically add the `Host: orderflow.local` header, allowing the ingress to route correctly.

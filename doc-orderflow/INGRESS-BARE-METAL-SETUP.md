@@ -440,3 +440,16 @@ kubectl get pods -n orderflow
 # View logs
 kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=50
 ```
+```bash 
+curl post command 
+
+
+curl -X POST -H "Host: orderflow.local" \
+     -H "Content-Type: application/json" \
+     -d '{"accountId":"ac-001","items":[{"productId":"prod-1","quantity":2,"price":29.99}],"shippingAddress":"123 Main St, New York, NY 10001","paymentMethod":"pmt-001"}' \
+     http://172.31.66.159:32095/api/v1/orders
+
+
+     check if tabe exist 
+
+   kubectl exec -n orderflow $(kubectl get pods -n orderflow -l app=postgres -o jsonpath='{.items[0].metadata.name}') -- psql -U orderuser -d orders -c "\dt"

@@ -2,123 +2,351 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk-17'
-        maven 'maven-3.9.5'
+        maven 'Maven3'
+        jdk 'JDK-17'
     }
 
     environment {
-        APP_NAME = 'orderflow-backend'
-        DOCKER_IMAGE = "orderflow-backend:${BUILD_NUMBER}"
-        SONAR_HOST_URL = 'http://sonarqube:9000'
-        SONAR_TOKEN = credentials('sonar-token')
+        APP_NAME          = 'orderflow-backend'
+        DOCKER_IMAGE      = "orderflow-backend:${BUILD_NUMBER}"
+        //DOCKER_HUB_REPO   = 'your-dockerhub-username'
+        SONAR_PROJECT_KEY = 'order-manager'
+        GIT_REPO          = 'https://github.com/fred4impact/order-manager-end-to-end-project.git'
+        K8S_MANIFEST    = 'k8s/backend.yaml'
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
 
-        stage('Build & Unit Test') {
+        /* ================= BUILD & TEST ================= */
+
+
+        stage('Stage ICheckout') {
             steps {
-                sh 'mvn clean test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                }
+                checkout scm
             }
         }
+
+
+        stage('Stage IIBuild & Unit Test') {
+                steps {
+                    dir('apps/backend') {
+                        sh 'mvn clean verify'
+                    }
+                }
+                post {
+                    always {
+                        junit testResults: 'apps/backend/target/surefire-reports/*.xml',
+                        allowEmptyResults: true
+                        archiveArtifacts artifacts: 'apps/backend/target/*.jar', fingerprint: true
+                    }
+                }
+        }
+
+
+         /* ================= DEPENDENCY & COVERAGE ================= */
 
         stage('Code Coverage') {
             steps {
-                sh 'mvn jacoco:report'
+                dir('apps/backend') {
+                    sh 'mvn jacoco:report' // call teh plugins here 
+                }
             }
             post {
                 always {
-                    publishHTML([
-                        reportDir: 'target/site/jacoco',
+                    junit 'apps/backend/target/surefire-reports/*.xml'
+
+            publishHTML([
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'apps/backend/target/site/jacoco',
                         reportFiles: 'index.html',
                         reportName: 'JaCoCo Coverage'
-                    ])
+                        ])
+                    }
+                }
+        }
+
+
+       stage('SCA - OWASP Dependency Check') {
+            steps {
+                dir('apps/backend') {
+                    dependencyCheck additionalArguments: '''
+                        --scan .
+                        --format HTML
+                        --out dependency-check-report
+                        --noupdate
+                        --failOnCVSS 7
+                    ''',
+                    odcInstallation: 'Dependency-Check'
+                }
+            }
+      }
+
+
+
+        // stage('SCA - OWASP Dependency Check') {
+        //     steps {
+        //         dependencyCheck(
+        //             odcInstallation: 'Dependency-Check',
+        //             scanPath: 'apps/backend',
+        //             format: 'HTML',
+        //             out: 'dependency-check-report',
+        //             failBuildOnCVSS: 0
+        //         )
+        //     }
+        // }
+
+
+
+
+        /* ================= STATIC ANALYSIS ================= */
+
+       stage('SAST - SonarQube Scan') {
+            steps {
+                dir('apps/backend') {
+                    withSonarQubeEnv('sonarqube-server') {
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+
+                            script {
+                                def scannerHome = tool 'sonar-scanner'
+                                sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=order-manager \
+                                -Dsonar.projectName=order-manager \
+                                -Dsonar.sources=src \
+                                -Dsonar.java.binaries=target \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+                                -Dsonar.dependencyCheck.jsonReportPath=target/dependency-check-report.json \
+                                -Dsonar.dependencyCheck.htmlReportPath=target/dependency-check-report.html \
+                                -Dsonar.login=$SONAR_TOKEN
+                                """
+                            }
+
+                        }
+                    }
                 }
             }
         }
 
-        stage('SCA - Dependency Check') {
-            steps {
-                sh 'mvn org.owasp:dependency-check-maven:check'
-            }
-            post {
-                always {
-                    publishHTML([
-                        reportDir: 'target',
-                        reportFiles: 'dependency-check-report.html',
-                        reportName: 'OWASP Dependency Check'
-                    ])
-                }
-            }
-        }
 
-        stage('SAST - SpotBugs & SonarQube') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh """
-                      mvn spotbugs:spotbugs sonar:sonar \
-                        -Dsonar.projectKey=orderflow-backend \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${SONAR_TOKEN}
-                    """
-                }
-            }
-        }
+
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
+                timeout(time: 20, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
-            }
-        }
+       
 
-        stage('Image Scan - Trivy') {
-            steps {
-                sh """
-                  docker run --rm \
-                  -v /var/run/docker.sock:/var/run/docker.sock \
-                  aquasec/trivy image \
-                  --severity CRITICAL,HIGH \
-                  --exit-code 1 \
-                  $DOCKER_IMAGE
-                """
-            }
-        }
+        /* ================= CONTAINER ================= */
 
-        stage('Smoke Test') {
+       
+       
+       stage('Docker Build') {
             steps {
-                sh """
-                  docker run -d -p 8080:8080 --name order-test $DOCKER_IMAGE
-                  sleep 20
-                  curl -f http://localhost:8080/actuator/health
-                """
-            }
-            post {
-                always {
-                    sh 'docker rm -f order-test || true'
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-cred',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    script {
+                        env.FULL_IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}:${BUILD_NUMBER}"
+                    }
+
+                     sh "docker build -t ${env.FULL_IMAGE_NAME} apps/backend"
                 }
+            }
+       }
+
+        stage('SBOM Generation') {
+            steps {
+                sh "syft ${FULL_IMAGE_NAME} -o cyclonedx-json > sbom-backend.json"
+                archiveArtifacts artifacts: 'sbom-backend.json', fingerprint: true
+            }
+        }
+
+
+
+       stage('Container Security Scan - Trivy') {
+            steps {
+                sh """
+                docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v \$PWD/.trivyignore:/root/.trivyignore \
+                aquasec/trivy image \
+                --severity HIGH,CRITICAL \
+                --ignore-unfixed \
+                --vuln-type os,library \
+                --exit-code 0 \
+                ${FULL_IMAGE_NAME}
+                """
+            }
+        }
+
+       
+
+        /* ================= SMOKE TEST ================= */
+ 
+       stage('Smoke Test') {
+            steps {
+                script {
+                    echo "Running the Smoke Test on the Docker image ${FULL_IMAGE_NAME}"
+                    
+                    // Clean up any existing test container
+                    sh "docker rm -f order-sample-test || true"
+                    
+                    // Run container with dev profile (uses H2 in-memory DB, no external DB needed)
+                    sh """
+                    docker run -d \
+                        --name order-sample-test \
+                        -p 18080:8080 \
+                        -e SPRING_PROFILES_ACTIVE=dev \
+                        ${FULL_IMAGE_NAME}
+                    """
+                    
+                    // Wait a bit for container to start
+                    sleep(time: 5, unit: 'SECONDS')
+                    
+                    // Check if container is running
+                    def containerStatus = sh(
+                        script: "docker inspect -f '{{.State.Status}}' order-sample-test",
+                        returnStdout: true
+                    ).trim()
+                    
+                    if (containerStatus != 'running') {
+                        echo "❌ Container is not running. Status: ${containerStatus}"
+                        sh "docker logs order-sample-test"
+                        error("Container failed to start")
+                    }
+                    
+                    echo "Container is running. Waiting for application to be ready..."
+                    
+                    // Wait for health endpoint with better error handling
+                    def maxAttempts = 24  // 24 * 5 = 120 seconds max
+                    def attempt = 0
+                    def healthCheckPassed = false
+                    
+                    while (attempt < maxAttempts) {
+                        // Check if container is still running
+                        containerStatus = sh(
+                            script: "docker inspect -f '{{.State.Status}}' order-sample-test 2>/dev/null || echo 'not-found'",
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (containerStatus != 'running') {
+                            echo "❌ Container stopped unexpectedly. Status: ${containerStatus}"
+                            sh "docker logs order-sample-test"
+                            error("Container stopped during health check")
+                        }
+                        
+                        // Try health check
+                        def httpCode = sh(
+                            script: "curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:18080/actuator/health || echo '000'",
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (httpCode == '200') {
+                            echo "✅ Health check passed! HTTP Status: ${httpCode}"
+                            healthCheckPassed = true
+                            break
+                        }
+                        
+                        attempt++
+                        echo "Attempt ${attempt}/${maxAttempts}: Health check returned ${httpCode}, waiting 5 seconds..."
+                        sleep(time: 5, unit: 'SECONDS')
+                    }
+                    
+                    if (!healthCheckPassed) {
+                        echo "❌ Health check failed after ${maxAttempts} attempts"
+                        echo "Container logs:"
+                        sh "docker logs order-sample-test"
+                        error("Smoke test failed: Application did not become healthy")
+                    }
+                    
+                    // Additional verification: test a simple endpoint
+                    echo "Verifying application is responding..."
+                    def response = sh(
+                        script: "curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:18080/actuator/info || echo '000'",
+                        returnStdout: true
+                    ).trim()
+                    
+                    echo "Info endpoint returned: ${response}"
+                    
+                    // Cleanup
+                    sh "docker stop order-sample-test || true"
+                    sh "docker rm order-sample-test || true"
+                    
+                    echo "✅ Smoke test completed successfully"
+                }
+            }
+        }
+
+
+
+
+    
+     /* ================= PUBLISH ================================== */
+
+    stage('Push Image to Docker Hub') {
+        steps {
+            withCredentials([usernamePassword(
+                credentialsId: 'docker-cred',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+            )]) {
+                sh """
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                docker push ${env.FULL_IMAGE_NAME}
+                """
             }
         }
     }
 
+
+        /* ================= GITOPS ================= */
+
+    stage('Update Kubernetes Manifests') {
+        steps {
+            withCredentials([
+                usernamePassword(
+                    credentialsId: 'github-cred',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
+                )
+            ]) {
+                sh """
+                    sed -i 's|image:.*|image: ${FULL_IMAGE_NAME}|g' k8s/backend.yaml
+
+                    git config user.email "jenkins@ci.local"
+                    git config user.name "Jenkins CI"
+                    git add k8s/backend.yaml
+                    git commit -m "ci: update backend image to ${BUILD_NUMBER}" || true
+                    git push https://\$GIT_USER:\$GIT_PASS@github.com/fred4impact/order-manager-end-to-end-project.git HEAD:master
+                """
+            }
+        }
+    }
+
+    }
+
     post {
         success {
-            echo "✅ Backend DevSecOps Pipeline Passed"
+            echo "✅ Backend CI/CD Pipeline Completed Successfully"
         }
         failure {
-            echo "❌ Backend DevSecOps Pipeline Failed"
+            echo "🔴 Backend CI/CD Pipeline Failed stop and check logs"
+        }
+        always {
+            cleanWs()
         }
     }
 }

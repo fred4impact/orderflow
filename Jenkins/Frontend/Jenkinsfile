@@ -1,70 +1,176 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18'
-        }
+    agent any
+
+    tools {
+        nodejs "Node18"
     }
 
     environment {
-        APP_NAME = 'order-ui'
-        DOCKER_IMAGE = "orderflow-frontend:${BUILD_NUMBER}"
+        APP_NAME        = 'orderflow-frontend'
+        FRONTEND_DIR    = 'apps/frontend'
+        DOCKER_IMAGE    = "${APP_NAME}:${BUILD_NUMBER}"
+        //DOCKER_HUB_REPO = 'YOUR_DOCKERHUB_USERNAME'   // 🔴 change this
+        K8S_MANIFEST    = 'k8s/frontend.yaml'
     }
 
     stages {
 
+        stage('Prepare Workspace') {
+            steps {
+                echo "✅ Preparing workspace"
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                dir("${FRONTEND_DIR}") {
+                    echo "📦 Installing dependencies"
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Lint & Static Analysis') {
+            steps {
+                dir("${FRONTEND_DIR}") {
+                    echo "🔍 ESLint + Semgrep"
+                    sh 'npx eslint src --max-warnings=0 || true'
+                    sh 'semgrep --config auto src || true'
+                }
             }
         }
 
         stage('Unit Tests') {
             steps {
-                sh 'npm test -- --ci --coverage || true'
+                dir("${FRONTEND_DIR}") {
+                    script {
+                        if (sh(script: "npm run | grep -q test", returnStatus: true) == 0) {
+                            echo "🧪 Running unit tests"
+                            sh 'npm test -- --coverage || true'
+                        } else {
+                            echo "⚠️ No unit tests found – skipping"
+                        }
+                    }
+                }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'coverage/**', fingerprint: true
+                    archiveArtifacts artifacts: "${FRONTEND_DIR}/coverage/**", allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('Dependency Scan (SCA)') {
+            steps {
+                dir("${FRONTEND_DIR}") {
+                    echo "🔐 npm audit"
+                    sh 'npm audit --audit-level=high || true'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_SCANNER_HOME = tool 'sonar-scanner'
+            }
+            steps {
+                dir("${FRONTEND_DIR}") {
+                    withSonarQubeEnv('sonarqube-server') {
+                        withCredentials([
+                            string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')
+                        ]) {
+                            sh '''
+                                $SONAR_SCANNER_HOME/bin/sonar-scanner \
+                                  -Dsonar.projectKey=orderflow-frontend \
+                                  -Dsonar.projectName=orderflow-frontend \
+                                  -Dsonar.sources=src \
+                                  -Dsonar.exclusions=node_modules/**,dist/** \
+                                  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+                                  -Dsonar.login=$SONAR_TOKEN
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 30, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
 
         stage('Build Frontend') {
             steps {
-                sh 'npm run build'
+                dir("${FRONTEND_DIR}") {
+                    echo "🏗️ Building frontend"
+                    sh 'npm run build'
+                }
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                dir("${FRONTEND_DIR}") {
+                    echo "🐳 Building Docker image"
+                    sh "docker build -t $DOCKER_IMAGE ."
+                }
             }
         }
 
-        stage('Image Scan - Trivy') {
+        stage('Image Security Scan') {
             steps {
-                sh '''
-                  docker run --rm \
-                  -v /var/run/docker.sock:/var/run/docker.sock \
-                  aquasec/trivy image \
-                  --severity CRITICAL,HIGH \
-                  --exit-code 0 \
-                  $DOCKER_IMAGE
-                '''
+                echo "🔒 Trivy image scan"
+                sh "trivy image --severity HIGH,CRITICAL --exit-code 0 $DOCKER_IMAGE || true"
             }
         }
 
-        stage('Smoke Test') {
+        stage('SBOM Generation') {
             steps {
-                sh '''
-                  docker run -d -P --name ui-test $DOCKER_IMAGE
-                  sleep 10
-                  docker port ui-test
-                '''
+                echo "📄 Generating SBOM"
+                sh "syft $DOCKER_IMAGE -o json > sbom-frontend.json"
+                archiveArtifacts artifacts: "sbom-frontend.json", allowEmptyArchive: true
             }
-            post {
-                always {
-                    sh 'docker rm -f ui-test || true'
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker-hub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker tag $DOCKER_IMAGE $DOCKER_USER/$APP_NAME:$BUILD_NUMBER
+                        docker push $DOCKER_USER/$APP_NAME:$BUILD_NUMBER
+                    '''
+                }
+            }
+        }
+
+        stage('Update Kubernetes Manifests') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'github-user',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_PASS'
+                    )
+                ]) {
+                    sh '''
+                        sed -i 's|image:.*|image: '"$DOCKER_HUB_REPO"'/'"$APP_NAME"':'"$BUILD_NUMBER"'|g' k8s/frontend.yaml
+
+                        git config user.email "jenkins@ci.local"
+                        git config user.name "Jenkins CI"
+                        git add k8s/frontend.yaml
+                        git commit -m "ci: update frontend image to ${BUILD_NUMBER}" || true
+                        git push https://$GIT_USER:$GIT_PASS@github.com/fred4impact/order-manager-end-to-end-project.git HEAD:master
+                    '''
                 }
             }
         }
@@ -72,10 +178,14 @@ pipeline {
 
     post {
         success {
-            echo "✅ Frontend DevSecOps Pipeline Passed"
+            echo "✅ Frontend CI Pipeline PASSED"
         }
         failure {
-            echo "❌ Frontend DevSecOps Pipeline Failed"
+            echo "❌ Frontend CI Pipeline FAILED"
+        }
+        cleanup {
+            echo "🧹 Cleaning Docker image"
+            sh "docker image rm -f $DOCKER_IMAGE || true"
         }
     }
 }

@@ -19,8 +19,10 @@ spec:
         ports:
         - containerPort: 8080
         env:
+        - name: DB_HOST
+          value: postgres-service
         - name: SPRING_DATASOURCE_URL
-          value: jdbc:postgresql://postgres:5432/orders
+          value: jdbc:postgresql://postgres-service:5432/orders
         - name: SPRING_DATASOURCE_USERNAME
           value: orderuser
         - name: SPRING_DATASOURCE_PASSWORD

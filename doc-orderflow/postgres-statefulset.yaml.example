@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: orderflow
+spec:
+  serviceName: postgres  # Must match the Service name
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          value: orders
+        - name: POSTGRES_USER
+          value: orderuser
+        - name: POSTGRES_PASSWORD
+          value: orderpass
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+  volumeClaimTemplates:  # Each pod gets its own PVC
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: ""  # Use default storage class, or specify your storage class
+      resources:
+        requests:
+          storage: 10Gi  # Adjust size as needed
+
+---
+# Service remains the same (regular ClusterIP)
+# OR use Headless Service for pod-specific DNS (see below)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: orderflow
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  # type: ClusterIP  # Regular service (default)
+  # clusterIP: None  # Uncomment for Headless Service (pod-specific DNS)
+
+---
+# Optional: Headless Service for pod-specific DNS
+# Uncomment if you need to connect to specific pods
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: postgres
+#   namespace: orderflow
+# spec:
+#   clusterIP: None  # Headless service
+#   selector:
+#     app: postgres
+#   ports:
+#   - port: 5432
+#     targetPort: 5432
+# 
+# This enables:
+# - postgres-0.postgres.orderflow.svc.cluster.local
+# - postgres-1.postgres.orderflow.svc.cluster.local
+# - postgres-2.postgres.orderflow.svc.cluster.local

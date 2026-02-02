@@ -2,17 +2,13 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: traefik-dashboard
-  namespace: traefik
+  namespace: traefik-system
 spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`traefik.minikube.local`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    - match: Host(\`traefik.bilarn.com\`)
       kind: Rule
       services:
-        - name: traefik
-          port: 8080
-
-
-   
-     
+        - name: api@internal
+          kind: TraefikService

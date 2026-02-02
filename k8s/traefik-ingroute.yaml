@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`orderflow.local`)
+    - match: Host(`orderflow.bilarn.com`)
       kind: Rule
       services:
         - name: frontend

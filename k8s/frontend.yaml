@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: runtesting/order-frontend:1.2
+        image: runtesting/orderflow-frontend:22
         ports:
         - containerPort: 80
         livenessProbe:

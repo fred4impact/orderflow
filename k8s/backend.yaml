@@ -19,13 +19,19 @@ spec:
         ports:
         - containerPort: 8080
         env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
         - name: DB_HOST
           value: postgres-service
-        - name: SPRING_DATASOURCE_URL
-          value: jdbc:postgresql://postgres-service:5432/orders
-        - name: SPRING_DATASOURCE_USERNAME
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: orders
+        - name: DB_USERNAME
           value: orderuser
-        - name: SPRING_DATASOURCE_PASSWORD
+        - name: DB_PASSWORD
           value: orderpass
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: "update"
         - name: CORS_ALLOW_ALL_ORIGINS
           value: "true"

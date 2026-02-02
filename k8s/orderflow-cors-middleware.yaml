@@ -1,0 +1,26 @@
+# apiVersion: traefik.io/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: orderflow-cors
+#   namespace: orderflow
+# spec:
+#   headers:
+#     accessControlAllowOriginList:
+#       - "*"
+#     accessControlAllowMethods:
+#       - GET
+#       - POST
+#       - PUT
+#       - DELETE
+#       - OPTIONS
+#     accessControlAllowHeaders:
+#       - DNT
+#       - User-Agent
+#       - X-Requested-With
+#       - If-Modified-Since
+#       - Cache-Control
+#       - Content-Type
+#       - Range
+#       - Authorization
+#     accessControlMaxAge: 1728000
+#     addVaryHeader: true

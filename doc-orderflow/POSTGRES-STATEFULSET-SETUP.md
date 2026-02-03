@@ -24,11 +24,11 @@ You can run both the Deployment and StatefulSet simultaneously:
 kubectl apply -f postgres-statefulset.yaml
 
 # Check both are running
-kubectl get pods -n orderflow -l app=postgres
-kubectl get pods -n orderflow -l app=postgres-statefulset
+kubectl get pods -n order -l app=postgres
+kubectl get pods -n order -l app=postgres-statefulset
 
 # Services
-kubectl get svc -n orderflow | grep postgres
+kubectl get svc -n order | grep postgres
 ```
 
 **Note**: Your backend currently connects to `postgres:5432` (the Deployment service). To use the StatefulSet, you'd need to update the backend connection string.
@@ -44,7 +44,7 @@ If you want to replace the Deployment with the StatefulSet:
 
 2. **Delete the Deployment**:
    ```bash
-   kubectl delete deployment postgres -n orderflow
+   kubectl delete deployment postgres -n order
    # Note: This will delete the pod, but data in PVC (if any) will remain
    ```
 
@@ -55,9 +55,9 @@ If you want to replace the Deployment with the StatefulSet:
 
 4. **Verify**:
    ```bash
-   kubectl get statefulset -n orderflow
-   kubectl get pods -n orderflow -l app=postgres
-   kubectl get pvc -n orderflow
+   kubectl get statefulset -n order
+   kubectl get pods -n order -l app=postgres
+   kubectl get pvc -n order
    ```
 
 ### Option 3: Use Different Service Name (Current Setup)
@@ -93,12 +93,12 @@ The StatefulSet creates a PersistentVolumeClaim automatically:
 
 To check PVC:
 ```bash
-kubectl get pvc -n orderflow
+kubectl get pvc -n order
 ```
 
 **Important**: PVCs are NOT automatically deleted when StatefulSet is deleted. To clean up:
 ```bash
-kubectl delete pvc postgres-data-postgres-statefulset-0 -n orderflow
+kubectl delete pvc postgres-data-postgres-statefulset-0 -n order
 ```
 
 ## Migration Path
@@ -107,7 +107,7 @@ If you want to migrate from Deployment to StatefulSet:
 
 1. **Backup existing data** (if any):
    ```bash
-   kubectl exec -n orderflow <postgres-pod-name> -- pg_dump -U orderuser orders > backup.sql
+   kubectl exec -n order <postgres-pod-name> -- pg_dump -U orderuser orders > backup.sql
    ```
 
 2. **Deploy StatefulSet**:
@@ -117,12 +117,12 @@ If you want to migrate from Deployment to StatefulSet:
 
 3. **Wait for pod to be ready**:
    ```bash
-   kubectl wait --for=condition=ready pod -l app=postgres-statefulset -n orderflow --timeout=300s
+   kubectl wait --for=condition=ready pod -l app=postgres-statefulset -n order --timeout=300s
    ```
 
 4. **Restore data** (if needed):
    ```bash
-   kubectl exec -i -n orderflow postgres-statefulset-0 -- psql -U orderuser -d orders < backup.sql
+   kubectl exec -i -n order postgres-statefulset-0 -- psql -U orderuser -d orders < backup.sql
    ```
 
 5. **Update backend** to point to `postgres-statefulset:5432`
@@ -133,26 +133,26 @@ If you want to migrate from Deployment to StatefulSet:
 
 ```bash
 # Check StatefulSet
-kubectl get statefulset postgres-statefulset -n orderflow
+kubectl get statefulset postgres-statefulset -n order
 
 # Check Pods
-kubectl get pods -n orderflow -l app=postgres-statefulset
+kubectl get pods -n order -l app=postgres-statefulset
 
 # Check PVCs
-kubectl get pvc -n orderflow
+kubectl get pvc -n order
 
 # Check Service
-kubectl get svc postgres-statefulset -n orderflow
+kubectl get svc postgres-statefulset -n order
 
 # Test connection
-kubectl exec -it postgres-statefulset-0 -n orderflow -- psql -U orderuser -d orders -c "\dt"
+kubectl exec -it postgres-statefulset-0 -n order -- psql -U orderuser -d orders -c "\dt"
 ```
 
 ## Scaling
 
 To scale the StatefulSet:
 ```bash
-kubectl scale statefulset postgres-statefulset --replicas=3 -n orderflow
+kubectl scale statefulset postgres-statefulset --replicas=3 -n order
 ```
 
 **Note**: Each replica gets its own PVC (10Gi × replicas = total storage needed)

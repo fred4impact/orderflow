@@ -1,6 +1,6 @@
 # Troubleshooting Ingress Connection Issues
 
-## Issue: "We can't connect to the server at orderflow.local"
+## Issue: "We can't connect to the server at order.local"
 
 This error indicates the browser cannot reach the server. Follow these steps:
 
@@ -8,28 +8,28 @@ This error indicates the browser cannot reach the server. Follow these steps:
 
 ## Step 1: Verify DNS Resolution
 
-Test if `orderflow.local` resolves correctly:
+Test if `order.local` resolves correctly:
 
 **On macOS/Linux:**
 ```bash
-ping orderflow.local
+ping order.local
 # Should resolve to 44.210.23.194
 
 # Or test with nslookup
-nslookup orderflow.local
+nslookup order.local
 # Should show 44.210.23.194
 ```
 
 **If it doesn't resolve:**
 1. Check `/etc/hosts` file:
    ```bash
-   cat /etc/hosts | grep orderflow
+   cat /etc/hosts | grep order
    ```
-   Should show: `44.210.23.194 orderflow.local`
+   Should show: `44.210.23.194 order.local`
 
 2. If missing, add it:
    ```bash
-   sudo sh -c 'echo "44.210.23.194 orderflow.local" >> /etc/hosts'
+   sudo sh -c 'echo "44.210.23.194 order.local" >> /etc/hosts'
    ```
 
 3. **Clear DNS cache:**
@@ -110,7 +110,7 @@ Verify:
 If DNS is the issue, test with curl using Host header:
 
 ```bash
-curl -H "Host: orderflow.local" http://44.210.23.194:31641/
+curl -H "Host: order.local" http://44.210.23.194:31641/
 ```
 
 If this works, the issue is DNS resolution on your local machine.
@@ -138,13 +138,13 @@ kubectl logs <pod-name> -n ingress-nginx
 Verify the ingress is correctly configured:
 
 ```bash
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl describe ingress order-ingress -n order
 ```
 
 Look for:
 - Events showing successful creation
 - Backend services are listed correctly
-- Host rule matches `orderflow.local`
+- Host rule matches `order.local`
 
 ---
 
@@ -172,7 +172,7 @@ While troubleshooting, you can use port forwarding:
 # On your local machine (if you have kubectl configured)
 kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
 
-# Then access: http://orderflow.local:8080
+# Then access: http://order.local:8080
 ```
 
 ### Solution 4: Access via IP with Browser Extension
@@ -181,7 +181,7 @@ Use a browser extension to modify Host header:
 - **Chrome:** "ModHeader" extension
 - **Firefox:** "Modify Headers" extension
 
-Set Host header to: `orderflow.local`
+Set Host header to: `order.local`
 Then access: `http://44.210.23.194:31641`
 
 ---
@@ -201,16 +201,16 @@ echo -e "\n=== Ingress Controller Service ==="
 kubectl get svc ingress-nginx-controller -n ingress-nginx
 
 echo -e "\n=== Ingress Resource ==="
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl describe ingress order-ingress -n order
 
 echo -e "\n=== Frontend Service ==="
-kubectl get svc frontend -n orderflow
+kubectl get svc frontend -n order
 
 echo -e "\n=== Backend Service ==="
-kubectl get svc backend -n orderflow
+kubectl get svc backend -n order
 
-echo -e "\n=== All Pods in orderflow namespace ==="
-kubectl get pods -n orderflow
+echo -e "\n=== All Pods in order namespace ==="
+kubectl get pods -n order
 ```
 
 ---
@@ -219,7 +219,7 @@ kubectl get pods -n orderflow
 
 1. **DNS Resolution:**
    ```bash
-   ping orderflow.local
+   ping order.local
    # Should ping 44.210.23.194
    ```
 
@@ -231,13 +231,13 @@ kubectl get pods -n orderflow
 
 3. **With Host Header:**
    ```bash
-   curl -H "Host: orderflow.local" http://44.210.23.194:31641/
+   curl -H "Host: order.local" http://44.210.23.194:31641/
    # Should return frontend HTML
    ```
 
 4. **Browser Access:**
    ```
-   http://orderflow.local:31641
+   http://order.local:31641
    # Should load the frontend
    ```
 
@@ -254,12 +254,12 @@ If none of the above works, check:
 
 2. **Are the frontend/backend services running?**
    ```bash
-   kubectl get pods -n orderflow
+   kubectl get pods -n order
    ```
 
 3. **Can you access services directly via port-forward?**
    ```bash
-   kubectl port-forward svc/frontend 8080:80 -n orderflow
+   kubectl port-forward svc/frontend 8080:80 -n order
    # Then try http://localhost:8080
    ```
 

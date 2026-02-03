@@ -17,7 +17,7 @@ kubectl apply -f ingress.yaml
 Verify the ingress was updated:
 
 ```bash
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl describe ingress order-ingress -n order
 ```
 
 You should see the CORS annotations in the output.
@@ -30,10 +30,10 @@ The backend should have `CORS_ALLOW_ALL_ORIGINS=true` set. Verify:
 
 ```bash
 # Check backend deployment environment variables
-kubectl get deployment backend -n orderflow -o yaml | grep -A 5 CORS
+kubectl get deployment backend -n order -o yaml | grep -A 5 CORS
 
 # Check backend pod environment
-kubectl exec -it <backend-pod-name> -n orderflow -- env | grep CORS
+kubectl exec -it <backend-pod-name> -n order -- env | grep CORS
 ```
 
 Expected output should show:
@@ -52,7 +52,7 @@ env:
 Then apply:
 ```bash
 kubectl apply -f backend.yaml
-kubectl rollout restart deployment backend -n orderflow
+kubectl rollout restart deployment backend -n order
 ```
 
 ---
@@ -63,10 +63,10 @@ Check if the backend is receiving requests and if CORS is working:
 
 ```bash
 # Get backend pod name
-kubectl get pods -n orderflow -l app=backend
+kubectl get pods -n order -l app=backend
 
 # Check logs
-kubectl logs <backend-pod-name> -n orderflow --tail=50
+kubectl logs <backend-pod-name> -n order --tail=50
 ```
 
 Look for:
@@ -83,22 +83,22 @@ Test if CORS headers are being returned:
 ```bash
 # Test OPTIONS preflight request
 curl -X OPTIONS \
-  -H "Origin: http://orderflow.local:31641" \
+  -H "Origin: http://order.local:31641" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: Content-Type" \
   -v http://44.210.23.194:31641/api/v1/orders
 
 # Test actual POST request
 curl -X POST \
-  -H "Origin: http://orderflow.local:31641" \
+  -H "Origin: http://order.local:31641" \
   -H "Content-Type: application/json" \
-  -H "Host: orderflow.local" \
+  -H "Host: order.local" \
   -d '{"accountId":"123","items":[{"productId":"1","quantity":2,"price":10.99}]}' \
   -v http://44.210.23.194:31641/api/v1/orders
 ```
 
 Check the response headers for:
-- `Access-Control-Allow-Origin: *` or `Access-Control-Allow-Origin: http://orderflow.local:31641`
+- `Access-Control-Allow-Origin: *` or `Access-Control-Allow-Origin: http://order.local:31641`
 - `Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS`
 - `Access-Control-Allow-Headers: *`
 
@@ -110,10 +110,10 @@ The frontend uses `/api/v1` as the base URL. Verify the backend API path:
 
 ```bash
 # Test backend health endpoint
-curl -H "Host: orderflow.local" http://44.210.23.194:31641/api/actuator/health
+curl -H "Host: order.local" http://44.210.23.194:31641/api/actuator/health
 
 # Test API endpoint
-curl -H "Host: orderflow.local" http://44.210.23.194:31641/api/v1/orders/account/123
+curl -H "Host: order.local" http://44.210.23.194:31641/api/v1/orders/account/123
 ```
 
 If the backend uses a different path (e.g., `/api/v1` vs `/api`), you may need to update the ingress rewrite rules.
@@ -150,7 +150,7 @@ annotations:
   nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
-    - host: orderflow.local
+    - host: order.local
       http:
         paths:
           - path: /api(/|$)(.*)
@@ -172,7 +172,7 @@ annotations:
   # nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - host: orderflow.local
+    - host: order.local
       http:
         paths:
           - path: /api
@@ -192,7 +192,7 @@ Check what endpoints the backend actually exposes:
 
 ```bash
 # Port forward to backend
-kubectl port-forward svc/backend 8080:8080 -n orderflow
+kubectl port-forward svc/backend 8080:8080 -n order
 
 # Test locally
 curl http://localhost:8080/api/v1/orders
@@ -234,19 +234,19 @@ This helps verify:
 
 ```bash
 # 1. Check ingress annotations
-kubectl get ingress orderflow-ingress -n orderflow -o yaml | grep -i cors
+kubectl get ingress order-ingress -n order -o yaml | grep -i cors
 
 # 2. Check backend environment
-kubectl get deployment backend -n orderflow -o jsonpath='{.spec.template.spec.containers[0].env[*]}' | grep CORS
+kubectl get deployment backend -n order -o jsonpath='{.spec.template.spec.containers[0].env[*]}' | grep CORS
 
 # 3. Test CORS preflight
 curl -X OPTIONS \
-  -H "Origin: http://orderflow.local:31641" \
+  -H "Origin: http://order.local:31641" \
   -H "Access-Control-Request-Method: POST" \
   -v http://44.210.23.194:31641/api/v1/orders 2>&1 | grep -i "access-control"
 
 # 4. Check backend logs
-kubectl logs -n orderflow -l app=backend --tail=20
+kubectl logs -n order -l app=backend --tail=20
 ```
 
 ---
@@ -272,12 +272,12 @@ After applying fixes, you should see:
 
 2. **Verify backend CORS:**
    ```bash
-   kubectl get deployment backend -n orderflow -o yaml | grep CORS
+   kubectl get deployment backend -n order -o yaml | grep CORS
    ```
 
 3. **Restart backend if needed:**
    ```bash
-   kubectl rollout restart deployment backend -n orderflow
+   kubectl rollout restart deployment backend -n order
    ```
 
 4. **Test in browser:**

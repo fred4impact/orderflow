@@ -1,6 +1,6 @@
-# Installing Prometheus and Grafana for OrderFlow Monitoring
+# Installing Prometheus and Grafana for order Monitoring
 
-This guide provides step-by-step instructions for installing Prometheus and Grafana using Helm charts to monitor the OrderFlow application running in Kubernetes.
+This guide provides step-by-step instructions for installing Prometheus and Grafana using Helm charts to monitor the order application running in Kubernetes.
 
 ---
 
@@ -11,7 +11,7 @@ Before starting, ensure you have:
 - ✅ Kubernetes cluster running (master + worker nodes)
 - ✅ `kubectl` configured and able to access your cluster
 - ✅ Helm 3.x installed
-- ✅ OrderFlow application deployed in Kubernetes
+- ✅ order application deployed in Kubernetes
 - ✅ Sufficient cluster resources (recommended: 4+ CPU cores, 8+ GB RAM)
 
 **Verify Prerequisites:**
@@ -23,8 +23,8 @@ kubectl cluster-info
 # Check Helm version
 helm version
 
-# Verify OrderFlow is deployed
-kubectl get pods -n orderflow
+# Verify order is deployed
+kubectl get pods -n order
 ```
 
 ---
@@ -260,7 +260,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: grafana.orderflow.local
+  - host: grafana.order.local
     http:
       paths:
       - path: /
@@ -273,9 +273,9 @@ spec:
 EOF
 
 # Add to /etc/hosts (on your local machine)
-# <WORKER_NODE_IP> grafana.orderflow.local
+# <WORKER_NODE_IP> grafana.order.local
 
-# Access via: http://grafana.orderflow.local:<INGRESS_NODEPORT>
+# Access via: http://grafana.order.local:<INGRESS_NODEPORT>
 ```
 
 ---
@@ -297,9 +297,9 @@ kubectl port-forward svc/prometheus-kube-prometheus-prometheus -n monitoring 909
 
 ---
 
-## 🔧 Step 6: Configure ServiceMonitor for OrderFlow Backend
+## 🔧 Step 6: Configure ServiceMonitor for order Backend
 
-To scrape metrics from your OrderFlow Spring Boot backend, create a ServiceMonitor:
+To scrape metrics from your order Spring Boot backend, create a ServiceMonitor:
 
 ### 6.1 Verify Backend Service Labels
 
@@ -307,7 +307,7 @@ First, check your backend service labels:
 
 ```bash
 # Check backend service
-kubectl get svc backend -n orderflow -o yaml
+kubectl get svc backend -n order -o yaml
 
 # Ensure the service has labels that match the ServiceMonitor selector
 ```
@@ -320,8 +320,8 @@ cat <<EOF | kubectl apply -f -
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: orderflow-backend
-  namespace: orderflow
+  name: order-backend
+  namespace: order
   labels:
     release: prometheus
 spec:
@@ -342,10 +342,10 @@ EOF
 
 ```bash
 # Check ServiceMonitor is created
-kubectl get servicemonitor -n orderflow
+kubectl get servicemonitor -n order
 
 # Describe ServiceMonitor
-kubectl describe servicemonitor orderflow-backend -n orderflow
+kubectl describe servicemonitor order-backend -n order
 ```
 
 ### 6.4 Verify Metrics Endpoint
@@ -354,7 +354,7 @@ Ensure your Spring Boot application exposes Prometheus metrics:
 
 ```bash
 # Test metrics endpoint directly
-kubectl port-forward svc/backend -n orderflow 8080:8080
+kubectl port-forward svc/backend -n order 8080:8080
 
 # In another terminal, test the endpoint
 curl http://localhost:8080/actuator/prometheus
@@ -384,11 +384,11 @@ management:
 
 1. Access Prometheus UI: `http://localhost:9090` (via port-forward)
 2. Go to **Status → Targets**
-3. Look for `orderflow-backend` target
+3. Look for `order-backend` target
 4. Status should be **UP** (green)
 
 **If target shows DOWN:**
-- Check backend pod logs: `kubectl logs -n orderflow -l app=backend`
+- Check backend pod logs: `kubectl logs -n order -l app=backend`
 - Verify metrics endpoint: `curl http://localhost:8080/actuator/prometheus`
 - Check ServiceMonitor labels match service labels
 
@@ -433,9 +433,9 @@ After accessing Grafana, import pre-built dashboards for monitoring:
 - **Metrics**: CPU, memory per pod
 - **Import**: Dashboard ID `6417`
 
-### 7.3 Create Custom OrderFlow Dashboard
+### 7.3 Create Custom order Dashboard
 
-Create a custom dashboard for OrderFlow-specific metrics:
+Create a custom dashboard for order-specific metrics:
 
 1. In Grafana, go to **Dashboards** → **New Dashboard**
 2. Click **Add Visualization**
@@ -444,7 +444,7 @@ Create a custom dashboard for OrderFlow-specific metrics:
 
 **Panel 1: HTTP Request Rate**
 ```promql
-rate(http_server_requests_seconds_count{application="orderflow-backend"}[5m])
+rate(http_server_requests_seconds_count{application="order-backend"}[5m])
 ```
 - **Title**: HTTP Request Rate
 - **Legend**: `{{uri}} {{method}}`
@@ -452,21 +452,21 @@ rate(http_server_requests_seconds_count{application="orderflow-backend"}[5m])
 
 **Panel 2: Response Time (95th percentile)**
 ```promql
-histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="orderflow-backend"}[5m]))
+histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="order-backend"}[5m]))
 ```
 - **Title**: Response Time (95th percentile)
 - **Unit**: seconds
 
 **Panel 3: Error Rate**
 ```promql
-rate(http_server_requests_seconds_count{application="orderflow-backend",status=~"5.."}[5m])
+rate(http_server_requests_seconds_count{application="order-backend",status=~"5.."}[5m])
 ```
 - **Title**: 5xx Error Rate
 - **Unit**: reqps
 
 **Panel 4: JVM Memory Usage**
 ```promql
-jvm_memory_used_bytes{application="orderflow-backend"}
+jvm_memory_used_bytes{application="order-backend"}
 ```
 - **Title**: JVM Memory Usage
 - **Legend**: `{{area}}`
@@ -474,14 +474,14 @@ jvm_memory_used_bytes{application="orderflow-backend"}
 
 **Panel 5: Pod CPU Usage**
 ```promql
-rate(container_cpu_usage_seconds_total{namespace="orderflow",container="backend"}[5m])
+rate(container_cpu_usage_seconds_total{namespace="order",container="backend"}[5m])
 ```
 - **Title**: Pod CPU Usage
 - **Unit**: percent
 
 **Panel 6: Pod Memory Usage**
 ```promql
-container_memory_usage_bytes{namespace="orderflow",container="backend"}
+container_memory_usage_bytes{namespace="order",container="backend"}
 ```
 - **Title**: Pod Memory Usage
 - **Unit**: bytes
@@ -490,44 +490,44 @@ container_memory_usage_bytes{namespace="orderflow",container="backend"}
 
 ## 🔍 Step 8: Useful Prometheus Queries
 
-Here are commonly used PromQL queries for monitoring OrderFlow:
+Here are commonly used PromQL queries for monitoring order:
 
 ### Application Metrics
 
 ```promql
 # HTTP Request Rate
-rate(http_server_requests_seconds_count{application="orderflow-backend"}[5m])
+rate(http_server_requests_seconds_count{application="order-backend"}[5m])
 
 # Error Rate (5xx)
-rate(http_server_requests_seconds_count{application="orderflow-backend",status=~"5.."}[5m])
+rate(http_server_requests_seconds_count{application="order-backend",status=~"5.."}[5m])
 
 # Response Time (95th percentile)
-histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="orderflow-backend"}[5m]))
+histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="order-backend"}[5m]))
 
 # Response Time (99th percentile)
-histogram_quantile(0.99, rate(http_server_requests_seconds_bucket{application="orderflow-backend"}[5m]))
+histogram_quantile(0.99, rate(http_server_requests_seconds_bucket{application="order-backend"}[5m]))
 
 # JVM Memory Used
-jvm_memory_used_bytes{application="orderflow-backend"}
+jvm_memory_used_bytes{application="order-backend"}
 
 # JVM Memory Max
-jvm_memory_max_bytes{application="orderflow-backend"}
+jvm_memory_max_bytes{application="order-backend"}
 
 # CPU Usage
-rate(process_cpu_seconds_total{application="orderflow-backend"}[5m])
+rate(process_cpu_seconds_total{application="order-backend"}[5m])
 ```
 
 ### Kubernetes Metrics
 
 ```promql
 # Pod CPU Usage
-rate(container_cpu_usage_seconds_total{namespace="orderflow"}[5m])
+rate(container_cpu_usage_seconds_total{namespace="order"}[5m])
 
 # Pod Memory Usage
-container_memory_usage_bytes{namespace="orderflow"}
+container_memory_usage_bytes{namespace="order"}
 
 # Pod Restart Count
-kube_pod_container_status_restarts_total{namespace="orderflow"}
+kube_pod_container_status_restarts_total{namespace="order"}
 
 # Node CPU Usage
 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
@@ -539,19 +539,19 @@ kube_pod_container_status_restarts_total{namespace="orderflow"}
 100 - ((node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"})
 ```
 
-### OrderFlow-Specific Metrics
+### order-Specific Metrics
 
 If you've added custom metrics to your application:
 
 ```promql
 # Active Orders (if you have this metric)
-orderflow_orders_active_total
+order_orders_active_total
 
 # Orders Created Rate
-rate(orderflow_orders_created_total[5m])
+rate(order_orders_created_total[5m])
 
 # Orders Completed Rate
-rate(orderflow_orders_completed_total[5m])
+rate(order_orders_completed_total[5m])
 ```
 
 ---
@@ -568,13 +568,13 @@ rate(orderflow_orders_completed_total[5m])
 
 ```bash
 # Check ServiceMonitor exists
-kubectl get servicemonitor -n orderflow
+kubectl get servicemonitor -n order
 
 # Check ServiceMonitor labels match Prometheus selector
-kubectl get servicemonitor orderflow-backend -n orderflow -o yaml
+kubectl get servicemonitor order-backend -n order -o yaml
 
 # Verify backend service labels
-kubectl get svc backend -n orderflow -o yaml | grep -A 5 labels
+kubectl get svc backend -n order -o yaml | grep -A 5 labels
 
 # Check Prometheus targets
 # Access Prometheus UI → Status → Targets
@@ -596,7 +596,7 @@ kubectl port-forward svc/prometheus-kube-prometheus-prometheus -n monitoring 909
 
 ```bash
 # Check if Actuator is enabled
-kubectl exec -it <backend-pod> -n orderflow -- cat /app/application.yml | grep actuator
+kubectl exec -it <backend-pod> -n order -- cat /app/application.yml | grep actuator
 
 # Verify Spring Boot Actuator dependency is in pom.xml
 # Add to application.yml:
@@ -632,7 +632,7 @@ management:
 # Test queries directly in Prometheus UI first
 
 # Check if metrics exist in Prometheus
-# In Prometheus UI, try query: up{job="orderflow-backend"}
+# In Prometheus UI, try query: up{job="order-backend"}
 ```
 
 ### Issue 4: Pods Not Starting
@@ -750,8 +750,8 @@ After completing all steps, verify:
 - [ ] Grafana pods are running
 - [ ] Can access Grafana UI
 - [ ] Can access Prometheus UI
-- [ ] ServiceMonitor created for OrderFlow backend
-- [ ] Prometheus is scraping OrderFlow metrics (check Targets)
+- [ ] ServiceMonitor created for order backend
+- [ ] Prometheus is scraping order metrics (check Targets)
 - [ ] At least one dashboard imported in Grafana
 - [ ] Metrics are visible in Grafana dashboards
 - [ ] Custom dashboard created (optional)
@@ -761,7 +761,7 @@ After completing all steps, verify:
 ## 🎯 Next Steps
 
 - Configure Alertmanager for alerting
-- Set up custom alerts for OrderFlow
+- Set up custom alerts for order
 - Add log aggregation (Loki + Promtail)
 - Configure persistent storage for long-term retention
 - Set up TLS/HTTPS for Grafana and Prometheus
@@ -769,6 +769,6 @@ After completing all steps, verify:
 
 ---
 
-**Status**: ✅ Complete monitoring stack for OrderFlow
+**Status**: ✅ Complete monitoring stack for order
 
 *Last Updated: [Current Date]*

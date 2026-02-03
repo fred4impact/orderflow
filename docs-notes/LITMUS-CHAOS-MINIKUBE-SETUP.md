@@ -1,19 +1,19 @@
-# Litmus Chaos Testing for OrderFlow on Minikube
+# Litmus Chaos Testing for order on Minikube
 
-This comprehensive guide walks you through setting up Litmus Chaos Engineering to test the OrderFlow application on Minikube, including monitoring infrastructure with Prometheus Node Exporter, Grafana Alloy, and Grafana Beyla for auto-instrumentation.
+This comprehensive guide walks you through setting up Litmus Chaos Engineering to test the order application on Minikube, including monitoring infrastructure with Prometheus Node Exporter, Grafana Alloy, and Grafana Beyla for auto-instrumentation.
 
 ---
 
 ## 📋 Table of Contents
 
 1. [Minikube Setup](#1-minikube-setup)
-2. [Deploying OrderFlow App](#2-deploying-orderflow-app)
-   - [Deploy via ArgoCD (Alternative)](#29-deploy-orderflow-via-argocd-alternative-to-direct-deployment)
+2. [Deploying order App](#2-deploying-order-app)
+   - [Deploy via ArgoCD (Alternative)](#29-deploy-order-via-argocd-alternative-to-direct-deployment)
 3. [Prometheus Node Exporter](#3-prometheus-node-exporter)
 4. [Grafana Alloy](#4-grafana-alloy)
 5. [Grafana Beyla (Auto-instrumentation)](#5-grafana-beyla-auto-instrumentation)
 6. [LitmusChaos Installation](#6-litmuschaos-installation)
-7. [Running Chaos Experiments](#7-running-chaos-experiments-against-orderflow)
+7. [Running Chaos Experiments](#7-running-chaos-experiments-against-order)
 8. [Observing Blast Radius in Grafana](#8-observing-blast-radius-in-grafana)
 
 ---
@@ -49,7 +49,7 @@ choco install minikube
 ### 1.2 Start Minikube Cluster
 
 ```bash
-# Start Minikube with sufficient resources for OrderFlow + monitoring + chaos
+# Start Minikube with sufficient resources for order + monitoring + chaos
 minikube start \
   --cpus=4 \
   --memory=8192 \
@@ -97,16 +97,16 @@ docker ps
 
 ---
 
-## 2. Deploying OrderFlow App
+## 2. Deploying order App
 
 ### 2.1 Create Namespace
 
 ```bash
-# Create orderflow namespace
-kubectl create namespace orderflow
+# Create order namespace
+kubectl create namespace order
 
 # Verify namespace
-kubectl get namespace orderflow
+kubectl get namespace order
 ```
 
 ### 2.2 Build and Push Docker Images
@@ -119,13 +119,13 @@ export DOCKER_USERNAME="your-dockerhub-username"
 
 # Build backend image
 cd backend
-docker build -t ${DOCKER_USERNAME}/orderflow-backend:1.0 .
-docker push ${DOCKER_USERNAME}/orderflow-backend:1.0
+docker build -t ${DOCKER_USERNAME}/order-backend:1.0 .
+docker push ${DOCKER_USERNAME}/order-backend:1.0
 
 # Build frontend image
 cd ../frontend
-docker build -t ${DOCKER_USERNAME}/orderflow-frontend:1.0 .
-docker push ${DOCKER_USERNAME}/orderflow-frontend:1.0
+docker build -t ${DOCKER_USERNAME}/order-frontend:1.0 .
+docker push ${DOCKER_USERNAME}/order-frontend:1.0
 
 cd ..
 ```
@@ -138,9 +138,9 @@ eval $(minikube docker-env)
 
 # Build images directly in Minikube
 cd backend
-docker build -t orderflow-backend:1.0 .
+docker build -t order-backend:1.0 .
 cd ../frontend
-docker build -t orderflow-frontend:1.0 .
+docker build -t order-frontend:1.0 .
 cd ..
 
 # Update k8s manifests to use imagePullPolicy: Never
@@ -153,11 +153,11 @@ If using Minikube's local Docker, update your manifests to use `imagePullPolicy:
 
 ```bash
 # Update backend.yaml
-kubectl patch deployment backend -n orderflow --type='json' \
+kubectl patch deployment backend -n order --type='json' \
   -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]' || true
 
 # Update frontend.yaml
-kubectl patch deployment frontend -n orderflow --type='json' \
+kubectl patch deployment frontend -n order --type='json' \
   -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]' || true
 ```
 
@@ -177,10 +177,10 @@ kubectl apply -f postgres.yaml
 kubectl apply -f postgres-service.yaml
 
 # Wait for PostgreSQL to be ready
-kubectl wait --for=condition=ready pod -l app=postgres -n orderflow --timeout=120s
+kubectl wait --for=condition=ready pod -l app=postgres -n order --timeout=120s
 
 # Verify PostgreSQL is running
-kubectl get pods -n orderflow | grep postgres
+kubectl get pods -n order | grep postgres
 ```
 
 ### 2.5 Deploy Backend
@@ -191,13 +191,13 @@ kubectl apply -f backend.yaml
 kubectl apply -f backend-service.yaml
 
 # Wait for backend to be ready
-kubectl wait --for=condition=ready pod -l app=backend -n orderflow --timeout=120s
+kubectl wait --for=condition=ready pod -l app=backend -n order --timeout=120s
 
 # Check backend logs
-kubectl logs -l app=backend -n orderflow --tail=50
+kubectl logs -l app=backend -n order --tail=50
 
 # Verify backend is running
-kubectl get pods -n orderflow | grep backend
+kubectl get pods -n order | grep backend
 ```
 
 ### 2.6 Deploy Frontend
@@ -208,17 +208,17 @@ kubectl apply -f frontend.yaml
 kubectl apply -f frontend-service.yaml
 
 # Wait for frontend to be ready
-kubectl wait --for=condition=ready pod -l app=frontend -n orderflow --timeout=120s
+kubectl wait --for=condition=ready pod -l app=frontend -n order --timeout=120s
 
 # Verify frontend is running
-kubectl get pods -n orderflow | grep frontend
+kubectl get pods -n order | grep frontend
 ```
 
-### 2.7 Verify OrderFlow Deployment
+### 2.7 Verify order Deployment
 
 ```bash
 # Check all pods are running
-kubectl get pods -n orderflow
+kubectl get pods -n order
 
 # Expected output:
 # NAME                        READY   STATUS    RESTARTS   AGE
@@ -227,36 +227,36 @@ kubectl get pods -n orderflow
 # postgres-xxx                1/1     Running   0          3m
 
 # Check services
-kubectl get svc -n orderflow
+kubectl get svc -n order
 
 # Test backend (port-forward)
-kubectl port-forward svc/backend -n orderflow 8080:8080 &
+kubectl port-forward svc/backend -n order 8080:8080 &
 # In another terminal: curl http://localhost:8080/api/orders
 
 # Test frontend (port-forward)
-kubectl port-forward svc/frontend -n orderflow 3000:80 &
+kubectl port-forward svc/frontend -n order 3000:80 &
 # Open browser: http://localhost:3000
 ```
 
-### 2.8 Access OrderFlow via Minikube Service
+### 2.8 Access order via Minikube Service
 
 ```bash
 # Expose frontend via NodePort (if using NodePort service)
-minikube service frontend -n orderflow
+minikube service frontend -n order
 
 # Or use port-forward
-kubectl port-forward svc/frontend -n orderflow 3000:80
+kubectl port-forward svc/frontend -n order 3000:80
 # Access at http://localhost:3000
 ```
 
-### 2.9 Deploy OrderFlow via ArgoCD (Alternative to Direct Deployment)
+### 2.9 Deploy order via ArgoCD (Alternative to Direct Deployment)
 
-If you deploy OrderFlow with **ArgoCD** instead of applying manifests directly with `kubectl`, use this flow. Litmus chaos experiments and the rest of this guide still apply—ArgoCD only changes how the app is deployed and synced.
+If you deploy order with **ArgoCD** instead of applying manifests directly with `kubectl`, use this flow. Litmus chaos experiments and the rest of this guide still apply—ArgoCD only changes how the app is deployed and synced.
 
 #### Prerequisites
 
 - ArgoCD installed on the cluster (or in the same Minikube cluster).
-- OrderFlow manifests in a Git repo (or a Helm chart) that ArgoCD can sync from.
+- order manifests in a Git repo (or a Helm chart) that ArgoCD can sync from.
 
 **Install ArgoCD on Minikube (if not already installed):**
 
@@ -281,28 +281,28 @@ kubectl port-forward svc/argocd-server -n argocd 8443:443
 
 #### Option A: ArgoCD Application pointing at a Git repo (raw manifests)
 
-Ensure your OrderFlow Kubernetes manifests (PostgreSQL, backend, frontend, services, etc.) are in a Git repository. Then create an ArgoCD Application:
+Ensure your order Kubernetes manifests (PostgreSQL, backend, frontend, services, etc.) are in a Git repository. Then create an ArgoCD Application:
 
 ```yaml
-# orderflow-argocd-app.yaml
+# order-argocd-app.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: orderflow
+  name: order
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/YOUR_ORG/orderflow.git   # Your repo with k8s manifests
+    repoURL: https://github.com/YOUR_ORG/order.git   # Your repo with k8s manifests
     targetRevision: main
     path: k8s                                          # Path to manifests (e.g. k8s/)
     directory:
       recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: orderflow
+    namespace: order
   syncPolicy:
     automated:
       prune: true
@@ -315,37 +315,37 @@ spec:
 Apply and sync:
 
 ```bash
-# Create orderflow namespace if not managed by ArgoCD
-kubectl create namespace orderflow --dry-run=client -o yaml | kubectl apply -f -
+# Create order namespace if not managed by ArgoCD
+kubectl create namespace order --dry-run=client -o yaml | kubectl apply -f -
 
 # Apply the ArgoCD Application
-kubectl apply -f orderflow-argocd-app.yaml
+kubectl apply -f order-argocd-app.yaml
 
 # Watch sync status
-kubectl get application orderflow -n argocd -w
+kubectl get application order -n argocd -w
 
 # Or use ArgoCD CLI
-argocd app sync orderflow
-argocd app wait orderflow --health
+argocd app sync order
+argocd app wait order --health
 ```
 
 #### Option B: ArgoCD Application with Helm chart
 
-If OrderFlow is packaged as a Helm chart in Git:
+If order is packaged as a Helm chart in Git:
 
 ```yaml
-# orderflow-argocd-app-helm.yaml
+# order-argocd-app-helm.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: orderflow
+  name: order
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/YOUR_ORG/orderflow.git
+    repoURL: https://github.com/YOUR_ORG/order.git
     targetRevision: main
-    path: charts/orderflow   # Path to Helm chart
+    path: charts/order   # Path to Helm chart
     helm:
       valueFiles:
         - values.yaml
@@ -355,7 +355,7 @@ spec:
       #     value: Never
   destination:
     server: https://kubernetes.default.svc
-    namespace: orderflow
+    namespace: order
   syncPolicy:
     automated:
       prune: true
@@ -365,19 +365,19 @@ spec:
 ```
 
 ```bash
-kubectl apply -f orderflow-argocd-app-helm.yaml
-argocd app sync orderflow
+kubectl apply -f order-argocd-app-helm.yaml
+argocd app sync order
 ```
 
 #### Verify deployment and compatibility with Litmus
 
-- Ensure the app ends up in the **`orderflow`** namespace with the same **labels** (e.g. `app=backend`, `app=frontend`, `app=postgres`) as in the direct-deploy steps, so Litmus experiments and Grafana queries in this guide still match.
+- Ensure the app ends up in the **`order`** namespace with the same **labels** (e.g. `app=backend`, `app=frontend`, `app=postgres`) as in the direct-deploy steps, so Litmus experiments and Grafana queries in this guide still match.
 - If you use different image sources (e.g. Minikube local images), set `image.pullPolicy` in Helm values or in kustomize/overlays so ArgoCD-deployed manifests match your environment.
 
 ```bash
 # Verify pods (same as direct deploy)
-kubectl get pods -n orderflow
-kubectl get svc -n orderflow
+kubectl get pods -n order
+kubectl get svc -n order
 
 # Litmus chaos experiments (Section 7) target namespace and labels;
 # they work the same whether the app was deployed by kubectl or ArgoCD.
@@ -390,10 +390,10 @@ kubectl get svc -n orderflow
 | **Apply** | You run `kubectl apply -f ...` | ArgoCD syncs from Git (or Helm) |
 | **Updates** | Manual re-apply | Git push + sync (or auto-sync) |
 | **Rollback** | Manual revert + apply | ArgoCD history / revert to previous revision |
-| **Namespace** | Same: `orderflow` | Same: `orderflow` (configure in `destination.namespace`) |
+| **Namespace** | Same: `order` | Same: `order` (configure in `destination.namespace`) |
 | **Chaos (Litmus)** | Unchanged | Unchanged—target same namespace and labels |
 
-After OrderFlow is running via ArgoCD, continue from **Section 3 (Prometheus Node Exporter)** and follow the rest of the guide for Litmus chaos testing and blast radius observation.
+After order is running via ArgoCD, continue from **Section 3 (Prometheus Node Exporter)** and follow the rest of the guide for Litmus chaos testing and blast radius observation.
 
 ---
 
@@ -469,7 +469,7 @@ kubectl port-forward svc/prometheus-kube-prometheus-prometheus -n monitoring 909
 
 ## 4. Grafana Alloy
 
-Grafana Alloy is a vendor-neutral telemetry collector that can collect metrics, logs, and traces. We'll use it to collect metrics from OrderFlow and forward them to Prometheus.
+Grafana Alloy is a vendor-neutral telemetry collector that can collect metrics, logs, and traces. We'll use it to collect metrics from order and forward them to Prometheus.
 
 ### 4.1 Install Grafana Alloy
 
@@ -493,12 +493,12 @@ data:
       }
     }
 
-    // Scrape OrderFlow backend metrics
-    prometheus.scrape "orderflow_backend" {
+    // Scrape order backend metrics
+    prometheus.scrape "order_backend" {
       targets = [
         {
-          __address__ = "backend.orderflow.svc.cluster.local:8080",
-          job = "orderflow-backend",
+          __address__ = "backend.order.svc.cluster.local:8080",
+          job = "order-backend",
         },
       ]
       forward_to = [prometheus.remote_write.prometheus.receiver]
@@ -606,7 +606,7 @@ kubectl port-forward svc/alloy -n alloy 12345:12345 &
 # Open browser: http://localhost:12345
 
 # Verify metrics are being collected
-# In Prometheus UI, check for metrics from orderflow-backend job
+# In Prometheus UI, check for metrics from order-backend job
 ```
 
 ---
@@ -654,7 +654,7 @@ spec:
         - name: BEYLA_PROMETHEUS_PORT
           value: "8999"
         - name: BEYLA_SERVICE_NAME
-          value: "orderflow-backend"
+          value: "order-backend"
         - name: BEYLA_EXECUTABLE_NAME
           value: "java"  # Spring Boot runs on Java
         - name: BEYLA_PROMETHEUS_EXPORTER
@@ -804,7 +804,7 @@ minikube service litmus-portal-frontend -n litmus
 
 ### 6.4 Install Chaos Experiments
 
-Litmus comes with pre-built chaos experiments. Install the ones we'll use for OrderFlow:
+Litmus comes with pre-built chaos experiments. Install the ones we'll use for order:
 
 ```bash
 # Install pod-delete experiment
@@ -835,7 +835,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: litmus-admin
-  namespace: orderflow
+  namespace: order
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -868,7 +868,7 @@ kubectl apply -f chaos-serviceaccount.yaml
 
 ---
 
-## 7. Running Chaos Experiments Against OrderFlow
+## 7. Running Chaos Experiments Against order
 
 ### 7.1 Pod Delete Experiment
 
@@ -880,11 +880,11 @@ cat <<EOF > pod-delete-chaos.yaml
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: orderflow-pod-delete
-  namespace: orderflow
+  name: order-pod-delete
+  namespace: order
 spec:
   appinfo:
-    appns: orderflow
+    appns: order
     applabel: app=backend
     appkind: deployment
   annotationCheck: 'false'
@@ -910,14 +910,14 @@ EOF
 kubectl apply -f pod-delete-chaos.yaml
 
 # Watch the chaos experiment
-kubectl get chaosengine -n orderflow
-kubectl describe chaosengine orderflow-pod-delete -n orderflow
+kubectl get chaosengine -n order
+kubectl describe chaosengine order-pod-delete -n order
 
 # Watch pods being deleted and recreated
-watch kubectl get pods -n orderflow
+watch kubectl get pods -n order
 
 # Check chaos results
-kubectl get chaosresults -n orderflow
+kubectl get chaosresults -n order
 ```
 
 ### 7.2 Pod CPU Hog Experiment
@@ -930,11 +930,11 @@ cat <<EOF > pod-cpu-hog-chaos.yaml
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: orderflow-pod-cpu-hog
-  namespace: orderflow
+  name: order-pod-cpu-hog
+  namespace: order
 spec:
   appinfo:
-    appns: orderflow
+    appns: order
     applabel: app=backend
     appkind: deployment
   annotationCheck: 'false'
@@ -958,10 +958,10 @@ EOF
 kubectl apply -f pod-cpu-hog-chaos.yaml
 
 # Monitor CPU usage
-kubectl top pods -n orderflow
+kubectl top pods -n order
 
 # Check chaos results
-kubectl get chaosresults -n orderflow
+kubectl get chaosresults -n order
 ```
 
 ### 7.3 Pod Memory Hog Experiment
@@ -974,11 +974,11 @@ cat <<EOF > pod-memory-hog-chaos.yaml
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: orderflow-pod-memory-hog
-  namespace: orderflow
+  name: order-pod-memory-hog
+  namespace: order
 spec:
   appinfo:
-    appns: orderflow
+    appns: order
     applabel: app=backend
     appkind: deployment
   annotationCheck: 'false'
@@ -1002,10 +1002,10 @@ EOF
 kubectl apply -f pod-memory-hog-chaos.yaml
 
 # Monitor memory usage
-kubectl top pods -n orderflow
+kubectl top pods -n order
 
 # Check chaos results
-kubectl get chaosresults -n orderflow
+kubectl get chaosresults -n order
 ```
 
 ### 7.4 Network Delay Experiment
@@ -1018,11 +1018,11 @@ cat <<EOF > network-delay-chaos.yaml
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: orderflow-network-delay
-  namespace: orderflow
+  name: order-network-delay
+  namespace: order
 spec:
   appinfo:
-    appns: orderflow
+    appns: order
     applabel: app=backend
     appkind: deployment
   annotationCheck: 'false'
@@ -1048,12 +1048,12 @@ EOF
 kubectl apply -f network-delay-chaos.yaml
 
 # Test API response times during chaos
-kubectl port-forward svc/backend -n orderflow 8080:8080 &
+kubectl port-forward svc/backend -n order 8080:8080 &
 # In another terminal, measure response time:
 time curl http://localhost:8080/api/orders
 
 # Check chaos results
-kubectl get chaosresults -n orderflow
+kubectl get chaosresults -n order
 ```
 
 ### 7.5 Pod Network Partition Experiment
@@ -1066,11 +1066,11 @@ cat <<EOF > pod-network-partition-chaos.yaml
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: orderflow-network-partition
-  namespace: orderflow
+  name: order-network-partition
+  namespace: order
 spec:
   appinfo:
-    appns: orderflow
+    appns: order
     applabel: app=backend
     appkind: deployment
   annotationCheck: 'false'
@@ -1087,49 +1087,49 @@ spec:
         - name: TARGET_PODS
           value: 'backend'
         - name: DESTINATION_HOSTS
-          value: 'postgres-service.orderflow.svc.cluster.local'
+          value: 'postgres-service.order.svc.cluster.local'
 EOF
 
 # Apply chaos experiment
 kubectl apply -f pod-network-partition-chaos.yaml
 
 # Test if backend can still connect to database
-kubectl logs -l app=backend -n orderflow --tail=50
+kubectl logs -l app=backend -n order --tail=50
 
 # Check chaos results
-kubectl get chaosresults -n orderflow
+kubectl get chaosresults -n order
 ```
 
 ### 7.6 Monitor Chaos Experiments
 
 ```bash
 # List all chaos engines
-kubectl get chaosengines -n orderflow
+kubectl get chaosengines -n order
 
 # Describe a specific chaos engine
-kubectl describe chaosengine orderflow-pod-delete -n orderflow
+kubectl describe chaosengine order-pod-delete -n order
 
 # List chaos results
-kubectl get chaosresults -n orderflow
+kubectl get chaosresults -n order
 
 # Get detailed chaos result
-kubectl get chaosresult orderflow-pod-delete-pod-delete -n orderflow -o yaml
+kubectl get chaosresult order-pod-delete-pod-delete -n order -o yaml
 
 # Watch chaos experiment pods
-kubectl get pods -n orderflow | grep chaos
+kubectl get pods -n order | grep chaos
 ```
 
 ### 7.7 Clean Up Chaos Experiments
 
 ```bash
 # Delete a specific chaos engine
-kubectl delete chaosengine orderflow-pod-delete -n orderflow
+kubectl delete chaosengine order-pod-delete -n order
 
 # Delete all chaos engines in namespace
-kubectl delete chaosengines --all -n orderflow
+kubectl delete chaosengines --all -n order
 
 # Delete chaos results (optional, for cleanup)
-kubectl delete chaosresults --all -n orderflow
+kubectl delete chaosresults --all -n order
 ```
 
 ---
@@ -1145,8 +1145,8 @@ We'll create a comprehensive dashboard to observe the impact of chaos experiment
 cat <<EOF > chaos-dashboard.json
 {
   "dashboard": {
-    "title": "OrderFlow Chaos Engineering Dashboard",
-    "tags": ["chaos", "orderflow"],
+    "title": "order Chaos Engineering Dashboard",
+    "tags": ["chaos", "order"],
     "timezone": "browser",
     "panels": [
       {
@@ -1155,7 +1155,7 @@ cat <<EOF > chaos-dashboard.json
         "type": "stat",
         "targets": [
           {
-            "expr": "kube_pod_status_phase{namespace=\"orderflow\"}",
+            "expr": "kube_pod_status_phase{namespace=\"order\"}",
             "legendFormat": "{{phase}}"
           }
         ],
@@ -1167,7 +1167,7 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "kube_pod_container_status_restarts_total{namespace=\"orderflow\"}",
+            "expr": "kube_pod_container_status_restarts_total{namespace=\"order\"}",
             "legendFormat": "{{pod}}"
           }
         ],
@@ -1179,7 +1179,7 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(container_cpu_usage_seconds_total{namespace=\"orderflow\"}[5m]) * 100",
+            "expr": "rate(container_cpu_usage_seconds_total{namespace=\"order\"}[5m]) * 100",
             "legendFormat": "{{pod}}"
           }
         ],
@@ -1191,7 +1191,7 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "container_memory_usage_bytes{namespace=\"orderflow\"}",
+            "expr": "container_memory_usage_bytes{namespace=\"order\"}",
             "legendFormat": "{{pod}}"
           }
         ],
@@ -1203,7 +1203,7 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(http_request_total{service_name=\"orderflow-backend\"}[5m])",
+            "expr": "rate(http_request_total{service_name=\"order-backend\"}[5m])",
             "legendFormat": "{{method}} {{status_code}}"
           }
         ],
@@ -1215,11 +1215,11 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name=\"orderflow-backend\"}[5m]))",
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name=\"order-backend\"}[5m]))",
             "legendFormat": "95th percentile"
           },
           {
-            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{service_name=\"orderflow-backend\"}[5m]))",
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{service_name=\"order-backend\"}[5m]))",
             "legendFormat": "99th percentile"
           }
         ],
@@ -1231,11 +1231,11 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(http_request_total{service_name=\"orderflow-backend\",status_code=~\"5..\"}[5m])",
+            "expr": "rate(http_request_total{service_name=\"order-backend\",status_code=~\"5..\"}[5m])",
             "legendFormat": "5xx Errors"
           },
           {
-            "expr": "rate(http_request_total{service_name=\"orderflow-backend\",status_code=~\"4..\"}[5m])",
+            "expr": "rate(http_request_total{service_name=\"order-backend\",status_code=~\"4..\"}[5m])",
             "legendFormat": "4xx Errors"
           }
         ],
@@ -1247,7 +1247,7 @@ cat <<EOF > chaos-dashboard.json
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name=\"orderflow-backend\"}[5m]))",
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name=\"order-backend\"}[5m]))",
             "legendFormat": "Response Time"
           }
         ],
@@ -1281,26 +1281,26 @@ cat <<EOF > chaos-alerts.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: orderflow-chaos-alerts
+  name: order-chaos-alerts
   namespace: monitoring
   labels:
     release: prometheus
 spec:
   groups:
-  - name: orderflow.chaos
+  - name: order.chaos
     interval: 30s
     rules:
     - alert: HighErrorRateDuringChaos
-      expr: rate(http_request_total{service_name="orderflow-backend",status_code=~"5.."}[5m]) > 0.1
+      expr: rate(http_request_total{service_name="order-backend",status_code=~"5.."}[5m]) > 0.1
       for: 2m
       labels:
         severity: warning
       annotations:
         summary: "High error rate detected during chaos experiment"
-        description: "Error rate is {{ \$value }} req/s for orderflow-backend"
+        description: "Error rate is {{ \$value }} req/s for order-backend"
     
     - alert: PodRestartDuringChaos
-      expr: increase(kube_pod_container_status_restarts_total{namespace="orderflow"}[5m]) > 0
+      expr: increase(kube_pod_container_status_restarts_total{namespace="order"}[5m]) > 0
       for: 1m
       labels:
         severity: warning
@@ -1309,7 +1309,7 @@ spec:
         description: "Pod {{ \$labels.pod }} has restarted"
     
     - alert: HighResponseTimeDuringChaos
-      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name="orderflow-backend"}[5m])) > 2
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name="order-backend"}[5m])) > 2
       for: 5m
       labels:
         severity: warning
@@ -1318,7 +1318,7 @@ spec:
         description: "95th percentile response time is {{ \$value }}s"
     
     - alert: PodDownDuringChaos
-      expr: up{namespace="orderflow"} == 0
+      expr: up{namespace="order"} == 0
       for: 1m
       labels:
         severity: critical
@@ -1341,8 +1341,8 @@ kubectl get prometheusrule -n monitoring
 1. **Before Chaos:**
    ```bash
    # Note baseline metrics
-   kubectl top pods -n orderflow
-   kubectl get pods -n orderflow
+   kubectl top pods -n order
+   kubectl get pods -n order
    
    # Test API
    curl http://localhost:8080/api/orders
@@ -1366,26 +1366,26 @@ kubectl get prometheusrule -n monitoring
 4. **Monitor in Prometheus:**
    ```bash
    # Query pod status
-   kube_pod_status_phase{namespace="orderflow"}
+   kube_pod_status_phase{namespace="order"}
    
    # Query restart count
-   kube_pod_container_status_restarts_total{namespace="orderflow"}
+   kube_pod_container_status_restarts_total{namespace="order"}
    
    # Query error rate
-   rate(http_request_total{service_name="orderflow-backend",status_code=~"5.."}[5m])
+   rate(http_request_total{service_name="order-backend",status_code=~"5.."}[5m])
    ```
 
 5. **Check Chaos Results:**
    ```bash
-   kubectl get chaosresults -n orderflow
-   kubectl describe chaosresult <result-name> -n orderflow
+   kubectl get chaosresults -n order
+   kubectl describe chaosresult <result-name> -n order
    ```
 
 6. **After Chaos:**
    ```bash
    # Verify recovery
-   kubectl get pods -n orderflow
-   kubectl top pods -n orderflow
+   kubectl get pods -n order
+   kubectl top pods -n order
    
    # Test API recovery
    curl http://localhost:8080/api/orders
@@ -1397,38 +1397,38 @@ kubectl get prometheusrule -n monitoring
 
 1. **Blast Radius - Affected Pods:**
    ```promql
-   count(kube_pod_status_phase{namespace="orderflow",phase!="Running"})
+   count(kube_pod_status_phase{namespace="order",phase!="Running"})
    ```
 
 2. **Blast Radius - Service Availability:**
    ```promql
-   sum(rate(http_request_total{service_name="orderflow-backend"}[5m])) 
+   sum(rate(http_request_total{service_name="order-backend"}[5m])) 
    / 
-   sum(rate(http_request_total{service_name="orderflow-backend"}[5m])) 
+   sum(rate(http_request_total{service_name="order-backend"}[5m])) 
    * 100
    ```
 
 3. **Blast Radius - Error Rate Impact:**
    ```promql
-   rate(http_request_total{service_name="orderflow-backend",status_code=~"5.."}[5m])
+   rate(http_request_total{service_name="order-backend",status_code=~"5.."}[5m])
    /
-   rate(http_request_total{service_name="orderflow-backend"}[5m])
+   rate(http_request_total{service_name="order-backend"}[5m])
    * 100
    ```
 
 4. **Blast Radius - Recovery Time:**
    ```promql
-   time() - kube_pod_status_phase{namespace="orderflow",phase="Running"}
+   time() - kube_pod_status_phase{namespace="order",phase="Running"}
    ```
 
 ### 8.6 Export Chaos Experiment Results
 
 ```bash
 # Get chaos result details
-kubectl get chaosresult -n orderflow -o yaml > chaos-results.yaml
+kubectl get chaosresult -n order -o yaml > chaos-results.yaml
 
 # Get chaos engine details
-kubectl get chaosengine -n orderflow -o yaml > chaos-engines.yaml
+kubectl get chaosengine -n order -o yaml > chaos-engines.yaml
 
 # Export Grafana dashboard
 # In Grafana UI: Dashboard → Share → Export → Save to file
@@ -1486,16 +1486,16 @@ kubectl logs -l app=alloy -n alloy
 
 ```bash
 # Check chaos experiment pods
-kubectl get pods -n orderflow | grep chaos
+kubectl get pods -n order | grep chaos
 
 # Check chaos experiment logs
-kubectl logs <chaos-pod-name> -n orderflow
+kubectl logs <chaos-pod-name> -n order
 
 # Describe chaos engine
-kubectl describe chaosengine <chaos-engine-name> -n orderflow
+kubectl describe chaosengine <chaos-engine-name> -n order
 
 # Check service account permissions
-kubectl auth can-i delete pods --as=system:serviceaccount:orderflow:litmus-admin -n orderflow
+kubectl auth can-i delete pods --as=system:serviceaccount:order:litmus-admin -n order
 ```
 
 ---
@@ -1506,10 +1506,10 @@ kubectl auth can-i delete pods --as=system:serviceaccount:orderflow:litmus-admin
 
 ```bash
 # Delete all chaos engines
-kubectl delete chaosengines --all -n orderflow
+kubectl delete chaosengines --all -n order
 
 # Delete chaos results
-kubectl delete chaosresults --all -n orderflow
+kubectl delete chaosresults --all -n order
 
 # Delete chaos service account
 kubectl delete -f chaos-serviceaccount.yaml
@@ -1537,11 +1537,11 @@ helm uninstall litmus -n litmus
 kubectl delete namespace litmus
 ```
 
-### 10.4 Remove OrderFlow
+### 10.4 Remove order
 
 ```bash
-# Delete OrderFlow application
-kubectl delete namespace orderflow
+# Delete order application
+kubectl delete namespace order
 ```
 
 ### 10.5 Stop Minikube
@@ -1585,11 +1585,11 @@ minikube delete
 After completing all steps, verify:
 
 - [ ] Minikube cluster is running
-- [ ] OrderFlow app is deployed and accessible
+- [ ] order app is deployed and accessible
 - [ ] Prometheus and Grafana are running
 - [ ] Node Exporter is collecting metrics
 - [ ] Grafana Alloy is collecting metrics
-- [ ] Grafana Beyla is auto-instrumenting OrderFlow
+- [ ] Grafana Beyla is auto-instrumenting order
 - [ ] Litmus is installed and accessible
 - [ ] Chaos experiments can be created
 - [ ] Chaos experiments execute successfully
@@ -1599,6 +1599,6 @@ After completing all steps, verify:
 
 ---
 
-**Status**: ✅ Complete Litmus Chaos setup for OrderFlow on Minikube
+**Status**: ✅ Complete Litmus Chaos setup for order on Minikube
 
 *Last Updated: January 2026*

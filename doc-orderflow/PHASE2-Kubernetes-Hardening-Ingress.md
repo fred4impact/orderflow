@@ -18,7 +18,7 @@ Ingress works with ClusterIP services.
     kind: Service
     metadata:
     name: frontend
-    namespace: orderflow
+    namespace: order
     spec:
     type: ClusterIP
     selector:
@@ -34,7 +34,7 @@ Ingress works with ClusterIP services.
         kind: Service
         metadata:
         name: backend
-        namespace: orderflow
+        namespace: order
         spec:
         type: ClusterIP
         selector:
@@ -77,14 +77,14 @@ kubectl get svc -n ingress-nginx
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: orderflow-ingress
-  namespace: orderflow
+  name: order-ingress
+  namespace: order
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
-    - host: orderflow.local
+    - host: order.local
       http:
         paths:
           - path: /
@@ -124,9 +124,9 @@ sudo vi /etc/hosts
 
 Add this line (replace <INGRESS_IP> with the actual IP):
 ```
-<INGRESS_IP> orderflow.local
+<INGRESS_IP> order.local
 # Example:
-# 44.210.23.194 orderflow.local
+# 44.210.23.194 order.local
 ```
 
 ### For Bare-Metal Kubernetes (EC2, On-Premises)
@@ -136,8 +136,8 @@ For bare-metal deployments, you need to use the worker node IP and NodePort. See
 Quick steps:
 1. Get worker node IP: `kubectl get nodes -o wide`
 2. Get NodePort: `kubectl get svc ingress-nginx-controller -n ingress-nginx`
-3. Add to `/etc/hosts`: `<WORKER_NODE_IP> orderflow.local`
-4. Access: `http://orderflow.local:<NODEPORT>`
+3. Add to `/etc/hosts`: `<WORKER_NODE_IP> order.local`
+4. Access: `http://order.local:<NODEPORT>`
 
 ## View the Frontend App
 
@@ -145,13 +145,13 @@ Quick steps:
 After adding the entry to `/etc/hosts`, open your web browser and navigate to:
 
 ```
-http://orderflow.local
+http://order.local
 ```
 
 ### Bare-Metal
 Access using:
 ```
-http://orderflow.local:<NODEPORT>
+http://order.local:<NODEPORT>
 ```
 
 The frontend will be served at the root path `/`, and the backend API will be accessible at `/api`.
@@ -166,7 +166,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: backend-config
-  namespace: orderflow
+  namespace: order
 data:
   SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orders
 
@@ -178,7 +178,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: backend-secret
-  namespace: orderflow
+  namespace: order
 type: Opaque
 stringData:
   SPRING_DATASOURCE_USERNAME: orderuser
@@ -255,7 +255,7 @@ Phase 2 Completion Checklist
 ## Objectives
 - Install ArgoCD
 - Create GitOps repo
-- Auto-sync Orderflow application
+- Auto-sync order application
 
 ---
 

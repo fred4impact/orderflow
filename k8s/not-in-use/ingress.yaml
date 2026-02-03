@@ -1,8 +1,8 @@
 # apiVersion: networking.k8s.io/v1
 # kind: Ingress
 # metadata:
-#   name: orderflow-ingress
-#   namespace: orderflow
+#   name: order-ingress
+#   namespace: order
 #   annotations:
 #     # CORS configuration
 #     nginx.ingress.kubernetes.io/enable-cors: "true"
@@ -14,7 +14,7 @@
 # spec:
 #   ingressClassName: nginx
 #   rules:
-#     - host: orderflow.local
+#     - host: order.local
 #       http:
 #         paths:
 #           - path: /api

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
-  namespace: orderflow
+  namespace: order
 spec:
   serviceName: postgres  # Service name for StatefulSet
   replicas: 1
@@ -52,7 +52,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres-service
-  namespace: orderflow
+  namespace: order
 spec:
   selector:
     app: postgres

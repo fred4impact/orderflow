@@ -1,7 +1,7 @@
 # Phase 1 – Kubernetes Manifests (Manual)
 What This Application Actually Is (Important)
 
-From the repo structure, Orderflow consists of:
+From the repo structure, order consists of:
 
 🔹 Backend
 
@@ -45,24 +45,24 @@ Frontend service
 
 ### Before deploying anything, inspect the repo:
 
-git clone https://github.com/fred4impact/orderflow.git
-cd orderflow
+git clone https://github.com/fred4impact/order.git
+cd order
 
 
 ### Create Namespace
 
 ```
-kubectl create namespace orderflow
+kubectl create namespace order
 
 # Build & Push Docker Images
 cd backend
 
-docker build -t <dockerhub-user>/orderflow-backend:1.0 .
-docker push <dockerhub-user>/orderflow-backend:1.0
+docker build -t <dockerhub-user>/order-backend:1.0 .
+docker push <dockerhub-user>/order-backend:1.0
 
 cd frontend
-docker build -t <dockerhub-user>/orderflow-frontend:1.0 .
-docker push <dockerhub-user>/orderflow-frontend:1.0
+docker build -t <dockerhub-user>/order-frontend:1.0 .
+docker push <dockerhub-user>/order-frontend:1.0
 
 
 ``` 
@@ -80,7 +80,7 @@ kubectl apply -f backend.yaml
 kubectl apply -f backend-service.yaml
 
 ## check logs 
-kubectl logs deploy/backend -n orderflow
+kubectl logs deploy/backend -n order
 
 ## Next deploy frontend  by applying 
 

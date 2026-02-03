@@ -8,7 +8,7 @@
 ✅ Access via port-forward (not LoadBalancer / NodePort)
 
 ```bash
-# Clean Traefik + Minikube + ArgoCD + Orderflow Flow (NodePort Version)
+# Clean Traefik + Minikube + ArgoCD + order Flow (NodePort Version)
 
 Architecture:
 
@@ -31,7 +31,7 @@ pods
 minikube delete
 
 kubectl delete ns traefik-system --ignore-not-found
-kubectl delete ns orderflow --ignore-not-found
+kubectl delete ns order --ignore-not-found
 kubectl delete ns argocd --ignore-not-found
 
 ------------------------------------------------------------
@@ -86,22 +86,22 @@ kubectl apply -f \
 https://raw.githubusercontent.com/traefik/traefik/v3.0/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
 
 ------------------------------------------------------------
-# 5 — Deploy Orderflow via ArgoCD
+# 5 — Deploy order via ArgoCD
 ------------------------------------------------------------
 
 argocd login localhost:8080 --insecure
 
-argocd app create orderflow \
---repo https://github.com/fred4impact/orderflow.git \
+argocd app create order \
+--repo https://github.com/fred4impact/order.git \
 --path . \
 --dest-server https://kubernetes.default.svc \
---dest-namespace orderflow
+--dest-namespace order
 
-argocd app sync orderflow
+argocd app sync order
 
-kubectl get pods -n orderflow
-kubectl get svc -n orderflow
-kubectl get endpoints -n orderflow
+kubectl get pods -n order
+kubectl get svc -n order
+kubectl get endpoints -n order
 
 ------------------------------------------------------------
 # 6 — Create Traefik IngressRoute
@@ -111,26 +111,26 @@ cat <<EOF | kubectl apply -f -
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: orderflow-frontend
-  namespace: orderflow
+  name: order-frontend
+  namespace: order
 spec:
   entryPoints:
     - web
   routes:
-    - match: Host(\`orderflow.local\`)
+    - match: Host(\`order.local\`)
       kind: Rule
       services:
         - name: frontend
           port: 80
 EOF
 
-kubectl get ingressroute -n orderflow
+kubectl get ingressroute -n order
 
 ------------------------------------------------------------
 # 7 — Add Host Mapping
 ------------------------------------------------------------
 
-echo "127.0.0.1 orderflow.local" | sudo tee -a /etc/hosts
+echo "127.0.0.1 order.local" | sudo tee -a /etc/hosts
 
 ------------------------------------------------------------
 # 8 — Expose Traefik NodePort Safely (docker driver fix)
@@ -147,15 +147,15 @@ minikube service traefik -n traefik-system --url
 # 9 — Test Through Traefik
 ------------------------------------------------------------
 
-curl -H "Host: orderflow.local" http://127.0.0.1:PORT
+curl -H "Host: order.local" http://127.0.0.1:PORT
 
-# Should return Orderflow HTML
+# Should return order HTML
 
 ------------------------------------------------------------
 # 10 — Browser Access
 ------------------------------------------------------------
 
-http://orderflow.local:PORT
+http://order.local:PORT
 
 ------------------------------------------------------------
 # SUCCESS
@@ -174,7 +174,7 @@ Browser
 
 kubectl logs -n traefik-system deploy/traefik
 kubectl get ingressroute --all-namespaces
-kubectl get endpoints -n orderflow
+kubectl get endpoints -n order
 
 ```
 
@@ -207,14 +207,14 @@ kubectl get endpoints -n orderflow
 
 
 ```bash
-# Traefik + Minikube + ArgoCD + Orderflow — Working Setup Guide
+# Traefik + Minikube + ArgoCD + order — Working Setup Guide
 
 This guide documents the exact working setup for:
 
 - Minikube (docker driver)
 - ArgoCD
 - Traefik v3 Helm chart
-- Orderflow app
+- order app
 - Traefik CRD IngressRoute
 
 - Local access via port-forward (required for docker driver)
@@ -248,7 +248,7 @@ helm install traefik traefik/traefik \
 
 kubectl get svc -n traefik-system
 kubectl logs -n traefik-system deploy/traefik -f
-kubectl get ingressroute orderflow-frontend -n orderflow -o yaml
+kubectl get ingressroute order-frontend -n order -o yaml
 
 minikube service traefik -n traefik-system
 
@@ -273,17 +273,17 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 # Get Password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
 
-# cd into the k8s directory in the orderflow 
-cd orderflow/k8s 
+# cd into the k8s directory in the order 
+cd order/k8s 
 kubectl apply -f argocd-application.yaml
 
-kubectl get all -n orderflow
+kubectl get all -n order
 
 
 # in etcs hosts 
-127.0.0.1  orderflow.local
+127.0.0.1  order.local
 # view 
-http://orderflow.local
+http://order.local
 
 # ACCESSING TRAEFIK DASHBOARD
 kubectl port-forward -n traefik-system svc/traefik 9000:9000
@@ -302,9 +302,9 @@ kubectl get pods -n traefik-system
 kubectl get svc  -n traefik-system
 
 
-kubectl get ingressroute -n orderflow
-kubectl get svc -n orderflow
-kubectl get endpoints -n orderflow
+kubectl get ingressroute -n order
+kubectl get svc -n order
+kubectl get endpoints -n order
 kubectl get pods -n traefik-system
 
 # Install Traefik CRD
@@ -323,11 +323,11 @@ kubectl logs -n traefik-system deploy/traefik | grep entrypoint
 
 kubectl port-forward -n traefik-system svc/traefik 8090:80
 
-curl -H "Host: orderflow.local" http://localhost:8090
+curl -H "Host: order.local" http://localhost:8090
 
-http://orderflow.local:8090
+http://order.local:8090
 
-# VIEW  http://orderflow.local:8090/
+# VIEW  http://order.local:8090/
 kubectl logs -n traefik-system deploy/traefik -f
 
 

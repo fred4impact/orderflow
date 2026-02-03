@@ -52,14 +52,14 @@
 
 **StatefulSet:**
 - **Headless Service** (ClusterIP: None) provides stable DNS:
-  - `postgres-0.postgres.orderflow.svc.cluster.local`
-  - `postgres-1.postgres.orderflow.svc.cluster.local`
-  - `postgres-2.postgres.orderflow.svc.cluster.local`
+  - `postgres-0.postgres.order.svc.cluster.local`
+  - `postgres-1.postgres.order.svc.cluster.local`
+  - `postgres-2.postgres.order.svc.cluster.local`
 - Regular Service still works for load balancing
 - Each pod has a stable network identity
 
 **Impact:**
-- ✅ Can connect to specific pod: `postgres-0.postgres.orderflow.svc.cluster.local`
+- ✅ Can connect to specific pod: `postgres-0.postgres.order.svc.cluster.local`
 - ✅ Better for database replication (master-replica setup)
 - ✅ Current backend connection (`postgres:5432`) still works if using regular Service
 - ⚠️ Need to update service to Headless if you want pod-specific DNS
@@ -149,7 +149,7 @@ Backend → postgres:5432 → Service → Any postgres pod (same as before)
 
 **With StatefulSet (Headless Service):**
 ```
-Backend → postgres-0.postgres.orderflow.svc.cluster.local:5432 → Specific pod
+Backend → postgres-0.postgres.order.svc.cluster.local:5432 → Specific pod
 ```
 ⚠️ **Would need to change** backend connection string to use specific pod
 

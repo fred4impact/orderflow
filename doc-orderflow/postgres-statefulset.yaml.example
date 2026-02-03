@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
-  namespace: orderflow
+  namespace: order
 spec:
   serviceName: postgres  # Must match the Service name
   replicas: 1
@@ -54,7 +54,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: orderflow
+  namespace: order
 spec:
   selector:
     app: postgres
@@ -71,7 +71,7 @@ spec:
 # kind: Service
 # metadata:
 #   name: postgres
-#   namespace: orderflow
+#   namespace: order
 # spec:
 #   clusterIP: None  # Headless service
 #   selector:
@@ -81,6 +81,6 @@ spec:
 #     targetPort: 5432
 # 
 # This enables:
-# - postgres-0.postgres.orderflow.svc.cluster.local
-# - postgres-1.postgres.orderflow.svc.cluster.local
-# - postgres-2.postgres.orderflow.svc.cluster.local
+# - postgres-0.postgres.order.svc.cluster.local
+# - postgres-1.postgres.order.svc.cluster.local
+# - postgres-2.postgres.order.svc.cluster.local

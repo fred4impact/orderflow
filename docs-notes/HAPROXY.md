@@ -1,6 +1,6 @@
-# HAProxy Setup for OrderFlow Application
+# HAProxy Setup for order Application
 
-This comprehensive guide covers setting up HAProxy as a load balancer and reverse proxy for the OrderFlow application, including both standalone and Kubernetes deployments.
+This comprehensive guide covers setting up HAProxy as a load balancer and reverse proxy for the order application, including both standalone and Kubernetes deployments.
 
 ---
 
@@ -31,7 +31,7 @@ HAProxy (High Availability Proxy) is a free, open-source load balancer and proxy
 - **Request Routing**: Route requests based on path, host, headers
 - **Performance**: High-performance, low-latency proxy
 
-### 1.2 OrderFlow Architecture with HAProxy
+### 1.2 order Architecture with HAProxy
 
 ```
 Internet
@@ -46,7 +46,7 @@ HAProxy (Port 80/443)
         └───► Backend Pods (Spring Boot API)
 ```
 
-### 1.3 Benefits for OrderFlow
+### 1.3 Benefits for order
 
 - **Load Distribution**: Balance traffic across multiple frontend/backend pods
 - **Health Monitoring**: Automatic removal of unhealthy backends
@@ -137,7 +137,7 @@ sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
 sudo nano /etc/haproxy/haproxy.cfg
 ```
 
-### 3.2 Complete HAProxy Configuration for OrderFlow
+### 3.2 Complete HAProxy Configuration for order
 
 ```haproxy
 global
@@ -184,9 +184,9 @@ frontend stats
     stats auth admin:admin123  # Change this password!
 
 # Frontend - Main Entry Point
-frontend orderflow_frontend
+frontend order_frontend
     bind *:80
-    bind *:443 ssl crt /etc/ssl/certs/orderflow.pem  # SSL certificate (optional)
+    bind *:443 ssl crt /etc/ssl/certs/order.pem  # SSL certificate (optional)
     
     # Redirect HTTP to HTTPS (if using SSL)
     # redirect scheme https code 301 if !{ ssl_fc }
@@ -206,11 +206,11 @@ frontend orderflow_frontend
     http-request return status 200 hdr Access-Control-Allow-Origin "*" hdr Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" hdr Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" if METH_OPTIONS
     
     # Route to backends
-    use_backend orderflow_backend if is_api
-    default_backend orderflow_frontend_backend
+    use_backend order_backend if is_api
+    default_backend order_frontend_backend
 
 # Backend - Frontend Service (React App)
-backend orderflow_frontend_backend
+backend order_frontend_backend
     balance roundrobin
     option httpchk GET /health
     http-check expect status 200
@@ -233,7 +233,7 @@ backend orderflow_frontend_backend
     # server frontend3 <NODE3_IP>:30080 check
 
 # Backend - Backend Service (Spring Boot API)
-backend orderflow_backend
+backend order_backend
     balance roundrobin
     option httpchk GET /actuator/health
     http-check expect status 200
@@ -242,11 +242,11 @@ backend orderflow_backend
     option forwardfor
     http-request set-header X-Forwarded-Proto https if { ssl_fc }
     http-request set-header X-Forwarded-Proto http if !{ ssl_fc }
-    http-request set-header Host orderflow.local
+    http-request set-header Host order.local
     
     # Server definitions
     # Option 1: Direct to Kubernetes service (if HAProxy is in cluster)
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
     
     # Option 2: Direct to NodePort (if HAProxy is outside cluster)
     # server backend1 <KUBERNETES_NODE_IP>:<BACKEND_NODEPORT> check
@@ -266,13 +266,13 @@ Before configuring HAProxy, get the necessary IPs and ports:
 kubectl get nodes -o wide
 
 # Get frontend service NodePort
-kubectl get svc frontend -n orderflow -o jsonpath='{.spec.ports[0].nodePort}'
+kubectl get svc frontend -n order -o jsonpath='{.spec.ports[0].nodePort}'
 
 # Get backend service information
-kubectl get svc backend -n orderflow
+kubectl get svc backend -n order
 
 # Get cluster IPs (if HAProxy is inside cluster)
-kubectl get svc -n orderflow
+kubectl get svc -n order
 ```
 
 ### 3.4 Update Configuration with Actual Values
@@ -346,7 +346,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: haproxy-config
-  namespace: orderflow
+  namespace: order
 data:
   haproxy.cfg: |
     global
@@ -376,7 +376,7 @@ data:
         stats admin if TRUE
 
     # Frontend - Main Entry Point
-    frontend orderflow_frontend
+    frontend order_frontend
         bind *:80
         
         # ACLs for routing
@@ -393,27 +393,27 @@ data:
         http-request return status 200 hdr Access-Control-Allow-Origin "*" hdr Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" hdr Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" if METH_OPTIONS
         
         # Route to backends
-        use_backend orderflow_backend if is_api
-        default_backend orderflow_frontend_backend
+        use_backend order_backend if is_api
+        default_backend order_frontend_backend
 
     # Backend - Frontend Service
-    backend orderflow_frontend_backend
+    backend order_frontend_backend
         balance roundrobin
         option httpchk GET /health
         http-check expect status 200
         option forwardfor
         
-        server frontend1 frontend.orderflow.svc.cluster.local:80 check
+        server frontend1 frontend.order.svc.cluster.local:80 check
 
     # Backend - Backend Service
-    backend orderflow_backend
+    backend order_backend
         balance roundrobin
         option httpchk GET /actuator/health
         http-check expect status 200
         option forwardfor
-        http-request set-header Host orderflow.local
+        http-request set-header Host order.local
         
-        server backend1 backend.orderflow.svc.cluster.local:8080 check
+        server backend1 backend.order.svc.cluster.local:8080 check
 EOF
 
 # Apply ConfigMap
@@ -429,7 +429,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: haproxy
-  namespace: orderflow
+  namespace: order
   labels:
     app: haproxy
 spec:
@@ -482,7 +482,7 @@ EOF
 kubectl apply -f haproxy-deployment.yaml
 
 # Wait for pods to be ready
-kubectl wait --for=condition=ready pod -l app=haproxy -n orderflow --timeout=120s
+kubectl wait --for=condition=ready pod -l app=haproxy -n order --timeout=120s
 ```
 
 ### 4.3 Create HAProxy Service
@@ -494,7 +494,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: haproxy
-  namespace: orderflow
+  namespace: order
   labels:
     app: haproxy
 spec:
@@ -516,25 +516,25 @@ EOF
 kubectl apply -f haproxy-service.yaml
 
 # Verify service
-kubectl get svc haproxy -n orderflow
+kubectl get svc haproxy -n order
 ```
 
 ### 4.4 Verify HAProxy Deployment
 
 ```bash
 # Check HAProxy pods
-kubectl get pods -l app=haproxy -n orderflow
+kubectl get pods -l app=haproxy -n order
 
 # Check HAProxy logs
-kubectl logs -l app=haproxy -n orderflow --tail=50
+kubectl logs -l app=haproxy -n order --tail=50
 
 # Test HAProxy
-kubectl port-forward svc/haproxy -n orderflow 8080:80 &
+kubectl port-forward svc/haproxy -n order 8080:80 &
 curl http://localhost:8080/
 curl http://localhost:8080/api/orders
 
 # Access statistics
-kubectl port-forward svc/haproxy -n orderflow 8404:8404 &
+kubectl port-forward svc/haproxy -n order 8404:8404 &
 # Open browser: http://localhost:8404/stats
 ```
 
@@ -548,34 +548,34 @@ HAProxy supports multiple load balancing algorithms. Update your backend configu
 
 ```haproxy
 # Round Robin (default) - Distributes requests evenly
-backend orderflow_backend
+backend order_backend
     balance roundrobin
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
-    server backend2 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
+    server backend2 backend.order.svc.cluster.local:8080 check
 
 # Least Connections - Routes to server with fewest connections
-backend orderflow_backend
+backend order_backend
     balance leastconn
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
-    server backend2 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
+    server backend2 backend.order.svc.cluster.local:8080 check
 
 # Source IP Hash - Sticky sessions based on client IP
-backend orderflow_backend
+backend order_backend
     balance source
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
-    server backend2 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
+    server backend2 backend.order.svc.cluster.local:8080 check
 
 # URI Hash - Sticky sessions based on URI
-backend orderflow_backend
+backend order_backend
     balance uri
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
-    server backend2 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
+    server backend2 backend.order.svc.cluster.local:8080 check
 
 # Weighted Round Robin - Assign weights to servers
-backend orderflow_backend
+backend order_backend
     balance roundrobin
-    server backend1 backend.orderflow.svc.cluster.local:8080 check weight 3
-    server backend2 backend.orderflow.svc.cluster.local:8080 check weight 1
+    server backend1 backend.order.svc.cluster.local:8080 check weight 3
+    server backend2 backend.order.svc.cluster.local:8080 check weight 1
 ```
 
 ### 5.2 Configure Multiple Backend Servers
@@ -583,43 +583,43 @@ backend orderflow_backend
 For high availability, configure multiple backend pods:
 
 ```haproxy
-backend orderflow_backend
+backend order_backend
     balance roundrobin
     option httpchk GET /actuator/health
     http-check expect status 200
     option forwardfor
     
     # Multiple backend servers
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
-    server backend2 backend.orderflow.svc.cluster.local:8080 check
-    server backend3 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
+    server backend2 backend.order.svc.cluster.local:8080 check
+    server backend3 backend.order.svc.cluster.local:8080 check
 ```
 
 ### 5.3 Server Weight and Backup Configuration
 
 ```haproxy
-backend orderflow_backend
+backend order_backend
     balance roundrobin
     option httpchk GET /actuator/health
     
     # Primary servers
-    server backend1 backend.orderflow.svc.cluster.local:8080 check weight 100
-    server backend2 backend.orderflow.svc.cluster.local:8080 check weight 100
+    server backend1 backend.order.svc.cluster.local:8080 check weight 100
+    server backend2 backend.order.svc.cluster.local:8080 check weight 100
     
     # Backup server (used only if primaries are down)
-    server backend3 backend.orderflow.svc.cluster.local:8080 check backup
+    server backend3 backend.order.svc.cluster.local:8080 check backup
 ```
 
 ### 5.4 Connection Limits
 
 ```haproxy
-backend orderflow_backend
+backend order_backend
     balance roundrobin
     option httpchk GET /actuator/health
     
     # Limit connections per server
-    server backend1 backend.orderflow.svc.cluster.local:8080 check maxconn 100
-    server backend2 backend.orderflow.svc.cluster.local:8080 check maxconn 100
+    server backend1 backend.order.svc.cluster.local:8080 check maxconn 100
+    server backend2 backend.order.svc.cluster.local:8080 check maxconn 100
 ```
 
 ---
@@ -629,7 +629,7 @@ backend orderflow_backend
 ### 6.1 HTTP Health Checks
 
 ```haproxy
-backend orderflow_backend
+backend order_backend
     # Basic HTTP check
     option httpchk GET /actuator/health
     
@@ -641,13 +641,13 @@ backend orderflow_backend
     option httpchk GET /actuator/health
     http-check expect string "UP"
     
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
 ```
 
 ### 6.2 Advanced Health Check Configuration
 
 ```haproxy
-backend orderflow_backend
+backend order_backend
     # Health check interval and timeout
     option httpchk GET /actuator/health
     http-check expect status 200
@@ -655,7 +655,7 @@ backend orderflow_backend
     # Check interval (default: 2s)
     # Check timeout (default: connect timeout)
     
-    server backend1 backend.orderflow.svc.cluster.local:8080 \
+    server backend1 backend.order.svc.cluster.local:8080 \
         check \
         inter 3s \
         fall 3 \
@@ -674,11 +674,11 @@ backend orderflow_backend
 ### 6.3 TCP Health Checks
 
 ```haproxy
-backend orderflow_backend
+backend order_backend
     # TCP check (just checks if port is open)
     option tcplog
     
-    server backend1 backend.orderflow.svc.cluster.local:8080 check
+    server backend1 backend.order.svc.cluster.local:8080 check
 ```
 
 ### 6.4 Verify Health Checks
@@ -691,7 +691,7 @@ curl http://localhost:8404/stats | grep backend
 # Open browser: http://<HAProxy_IP>:8404/stats
 
 # Check backend status
-echo "show stat" | socat stdio /run/haproxy/admin.sock | grep orderflow_backend
+echo "show stat" | socat stdio /run/haproxy/admin.sock | grep order_backend
 ```
 
 ---
@@ -706,25 +706,25 @@ sudo mkdir -p /etc/ssl/certs
 
 # Generate self-signed certificate (for testing)
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout /etc/ssl/private/orderflow.key \
-    -out /etc/ssl/certs/orderflow.crt \
-    -subj "/C=US/ST=State/L=City/O=Organization/CN=orderflow.local"
+    -keyout /etc/ssl/private/order.key \
+    -out /etc/ssl/certs/order.crt \
+    -subj "/C=US/ST=State/L=City/O=Organization/CN=order.local"
 
 # Combine certificate and key for HAProxy
-sudo cat /etc/ssl/certs/orderflow.crt /etc/ssl/private/orderflow.key | \
-    sudo tee /etc/ssl/certs/orderflow.pem
+sudo cat /etc/ssl/certs/order.crt /etc/ssl/private/order.key | \
+    sudo tee /etc/ssl/certs/order.pem
 
 # Set permissions
-sudo chmod 600 /etc/ssl/certs/orderflow.pem
-sudo chown haproxy:haproxy /etc/ssl/certs/orderflow.pem
+sudo chmod 600 /etc/ssl/certs/order.pem
+sudo chown haproxy:haproxy /etc/ssl/certs/order.pem
 ```
 
 ### 7.2 Configure SSL in HAProxy
 
 ```haproxy
-frontend orderflow_frontend
+frontend order_frontend
     bind *:80
-    bind *:443 ssl crt /etc/ssl/certs/orderflow.pem
+    bind *:443 ssl crt /etc/ssl/certs/order.pem
     
     # Redirect HTTP to HTTPS
     redirect scheme https code 301 if !{ ssl_fc }
@@ -733,16 +733,16 @@ frontend orderflow_frontend
     acl is_api path_beg /api
     
     # Route to backends
-    use_backend orderflow_backend if is_api
-    default_backend orderflow_frontend_backend
+    use_backend order_backend if is_api
+    default_backend order_frontend_backend
 ```
 
 ### 7.3 SSL Configuration Options
 
 ```haproxy
-frontend orderflow_frontend
+frontend order_frontend
     bind *:443 ssl \
-        crt /etc/ssl/certs/orderflow.pem \
+        crt /etc/ssl/certs/order.pem \
         alpn h2,http/1.1 \
         ssl-min-ver TLSv1.2 \
         ssl-max-ver TLSv1.3 \
@@ -759,12 +759,12 @@ frontend orderflow_frontend
 sudo apt-get install -y certbot
 
 # Obtain certificate
-sudo certbot certonly --standalone -d orderflow.local
+sudo certbot certonly --standalone -d order.local
 
 # Combine certificate for HAProxy
-sudo cat /etc/letsencrypt/live/orderflow.local/fullchain.pem \
-    /etc/letsencrypt/live/orderflow.local/privkey.pem | \
-    sudo tee /etc/ssl/certs/orderflow.pem
+sudo cat /etc/letsencrypt/live/order.local/fullchain.pem \
+    /etc/letsencrypt/live/order.local/privkey.pem | \
+    sudo tee /etc/ssl/certs/order.pem
 
 # Update HAProxy config
 # Use the Let's Encrypt certificate path
@@ -777,7 +777,7 @@ sudo cat /etc/letsencrypt/live/orderflow.local/fullchain.pem \
 ### 8.1 Basic CORS Configuration
 
 ```haproxy
-frontend orderflow_frontend
+frontend order_frontend
     bind *:80
     
     acl is_api path_beg /api
@@ -796,18 +796,18 @@ frontend orderflow_frontend
         hdr Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" \
         if METH_OPTIONS
     
-    use_backend orderflow_backend if is_api
-    default_backend orderflow_frontend_backend
+    use_backend order_backend if is_api
+    default_backend order_frontend_backend
 ```
 
 ### 8.2 Advanced CORS with Origin Validation
 
 ```haproxy
-frontend orderflow_frontend
+frontend order_frontend
     bind *:80
     
     acl is_api path_beg /api
-    acl allowed_origin hdr(Origin) -m reg -i ^https?://(localhost|orderflow\.local|.*\.orderflow\.local)(:[0-9]+)?$
+    acl allowed_origin hdr(Origin) -m reg -i ^https?://(localhost|order\.local|.*\.order\.local)(:[0-9]+)?$
     
     # Set CORS headers only for allowed origins
     http-response set-header Access-Control-Allow-Origin "%[hdr(Origin)]" if is_api allowed_origin
@@ -822,8 +822,8 @@ frontend orderflow_frontend
         hdr Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" \
         if METH_OPTIONS allowed_origin
     
-    use_backend orderflow_backend if is_api
-    default_backend orderflow_frontend_backend
+    use_backend order_backend if is_api
+    default_backend order_frontend_backend
 ```
 
 ### 8.3 Test CORS Configuration
@@ -893,7 +893,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: haproxy-exporter
-  namespace: orderflow
+  namespace: order
 spec:
   replicas: 1
   selector:
@@ -908,7 +908,7 @@ spec:
       - name: haproxy-exporter
         image: quay.io/prometheus/haproxy-exporter:latest
         args:
-          - --haproxy.scrape-uri=http://haproxy.orderflow.svc.cluster.local:8404/stats;csv
+          - --haproxy.scrape-uri=http://haproxy.order.svc.cluster.local:8404/stats;csv
         ports:
         - containerPort: 9101
           name: metrics
@@ -997,7 +997,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: haproxy
-  namespace: orderflow
+  namespace: order
 spec:
   replicas: 3  # Multiple replicas
   selector:
@@ -1041,7 +1041,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: haproxy
-  namespace: orderflow
+  namespace: order
 spec:
   type: LoadBalancer
   selector:
@@ -1077,13 +1077,13 @@ sudo netstat -tlnp | grep :80
 
 ```bash
 # Check health check endpoint
-curl http://backend.orderflow.svc.cluster.local:8080/actuator/health
+curl http://backend.order.svc.cluster.local:8080/actuator/health
 
 # Check HAProxy statistics
 curl http://localhost:8404/stats
 
 # Check backend connectivity from HAProxy pod
-kubectl exec -it <haproxy-pod> -n orderflow -- wget -O- http://backend.orderflow.svc.cluster.local:8080/actuator/health
+kubectl exec -it <haproxy-pod> -n order -- wget -O- http://backend.order.svc.cluster.local:8080/actuator/health
 ```
 
 **Issue: CORS not working**
@@ -1102,13 +1102,13 @@ sudo tail -f /var/log/haproxy.log
 
 ```bash
 # Verify certificate
-sudo openssl x509 -in /etc/ssl/certs/orderflow.pem -text -noout
+sudo openssl x509 -in /etc/ssl/certs/order.pem -text -noout
 
 # Check certificate permissions
-ls -la /etc/ssl/certs/orderflow.pem
+ls -la /etc/ssl/certs/order.pem
 
 # Test SSL connection
-openssl s_client -connect localhost:443 -servername orderflow.local
+openssl s_client -connect localhost:443 -servername order.local
 ```
 
 ### 11.2 Debug Commands
@@ -1127,7 +1127,7 @@ sudo haproxy -f /etc/haproxy/haproxy.cfg -c -V
 watch -n 1 'echo "show stat" | socat stdio /run/haproxy/admin.sock'
 
 # Check backend status
-echo "show stat" | socat stdio /run/haproxy/admin.sock | grep orderflow_backend
+echo "show stat" | socat stdio /run/haproxy/admin.sock | grep order_backend
 ```
 
 ### 11.3 Log Analysis
@@ -1141,10 +1141,10 @@ echo "show stat" | socat stdio /run/haproxy/admin.sock | grep orderflow_backend
 sudo tail -f /var/log/haproxy.log
 
 # Filter logs
-sudo grep "orderflow_backend" /var/log/haproxy.log
+sudo grep "order_backend" /var/log/haproxy.log
 
 # Count errors
-sudo grep "orderflow_backend" /var/log/haproxy.log | grep -c "503"
+sudo grep "order_backend" /var/log/haproxy.log | grep -c "503"
 ```
 
 ### 11.4 Performance Tuning
@@ -1244,9 +1244,9 @@ frontend stats
     stats admin if TRUE
     stats auth admin:SecurePassword123!
 
-frontend orderflow_frontend
+frontend order_frontend
     bind *:80
-    bind *:443 ssl crt /etc/ssl/certs/orderflow.pem alpn h2,http/1.1
+    bind *:443 ssl crt /etc/ssl/certs/order.pem alpn h2,http/1.1
     
     redirect scheme https code 301 if !{ ssl_fc }
     
@@ -1264,27 +1264,27 @@ frontend orderflow_frontend
         hdr Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" \
         if METH_OPTIONS
     
-    use_backend orderflow_backend if is_api
-    default_backend orderflow_frontend_backend
+    use_backend order_backend if is_api
+    default_backend order_frontend_backend
 
-backend orderflow_frontend_backend
+backend order_frontend_backend
     balance roundrobin
     option httpchk GET /health
     http-check expect status 200
     option forwardfor
     
-    server frontend1 frontend.orderflow.svc.cluster.local:80 check inter 3s fall 3 rise 2
+    server frontend1 frontend.order.svc.cluster.local:80 check inter 3s fall 3 rise 2
 
-backend orderflow_backend
+backend order_backend
     balance roundrobin
     option httpchk GET /actuator/health
     http-check expect status 200
     option forwardfor
-    http-request set-header Host orderflow.local
+    http-request set-header Host order.local
     
-    server backend1 backend.orderflow.svc.cluster.local:8080 check inter 3s fall 3 rise 2 maxconn 100
-    server backend2 backend.orderflow.svc.cluster.local:8080 check inter 3s fall 3 rise 2 maxconn 100
-    server backend3 backend.orderflow.svc.cluster.local:8080 check inter 3s fall 3 rise 2 maxconn 100
+    server backend1 backend.order.svc.cluster.local:8080 check inter 3s fall 3 rise 2 maxconn 100
+    server backend2 backend.order.svc.cluster.local:8080 check inter 3s fall 3 rise 2 maxconn 100
+    server backend3 backend.order.svc.cluster.local:8080 check inter 3s fall 3 rise 2 maxconn 100
 ```
 
 ---
@@ -1316,6 +1316,6 @@ After completing HAProxy setup:
 
 ---
 
-**Status**: ✅ Complete HAProxy setup guide for OrderFlow
+**Status**: ✅ Complete HAProxy setup guide for order
 
 *Last Updated: January 2026*

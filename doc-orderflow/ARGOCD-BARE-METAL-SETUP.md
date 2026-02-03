@@ -5,7 +5,7 @@ This guide walks you through installing and configuring ArgoCD on a bare-metal K
 ## Prerequisites
 
 - Kubernetes cluster running on EC2 (master + worker nodes)
-- Orderflow application already deployed
+- order application already deployed
 - `kubectl` configured to access your cluster
 - Git repository with your Kubernetes manifests (or create one)
 - Access to worker node IP addresses
@@ -238,7 +238,7 @@ If you already have a Git repository with your Kubernetes manifests, note the re
 3. Organize manifests in a directory structure, for example:
 
 ```
-orderflow-gitops/
+order-gitops/
 ├── k8s/
 │   ├── namespace.yaml
 │   ├── postgres.yaml
@@ -257,16 +257,16 @@ If you want to use your current local files:
 
 1. **Initialize Git repository:**
    ```bash
-   cd /path/to/orderflow/k8s
+   cd /path/to/order/k8s
    git init
    git add .
-   git commit -m "Initial commit: Orderflow Kubernetes manifests"
+   git commit -m "Initial commit: order Kubernetes manifests"
    ```
 
 2. **Create remote repository and push:**
    ```bash
    # Add remote (replace with your repo URL)
-   git remote add origin https://github.com/YOUR_USERNAME/orderflow-gitops.git
+   git remote add origin https://github.com/YOUR_USERNAME/order-gitops.git
    git branch -M main
    git push -u origin main
    ```
@@ -277,25 +277,25 @@ If you want to use your current local files:
 
 ### 7.1 Create Application Manifest
 
-Create an ArgoCD Application that will sync your Orderflow application:
+Create an ArgoCD Application that will sync your order application:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: orderflow
+  name: order
   namespace: argocd
 spec:
   project: default
   
   source:
-    repoURL: https://github.com/YOUR_USERNAME/orderflow-gitops.git  # Replace with your repo URL
+    repoURL: https://github.com/YOUR_USERNAME/order-gitops.git  # Replace with your repo URL
     targetRevision: main  # or your branch name
     path: k8s  # Path to manifests in the repo
   
   destination:
     server: https://kubernetes.default.svc
-    namespace: orderflow
+    namespace: order
   
   syncPolicy:
     automated:
@@ -320,7 +320,7 @@ kubectl apply -f argocd-application.yaml
 kubectl get applications -n argocd
 
 # Get detailed status
-kubectl describe application orderflow -n argocd
+kubectl describe application order -n argocd
 ```
 
 You can also check in the ArgoCD UI - the application should appear there.
@@ -334,7 +334,7 @@ The application manifest above already includes auto-sync. To verify or update:
 ### 8.1 Via UI
 
 1. Go to ArgoCD UI
-2. Click on the `orderflow` application
+2. Click on the `order` application
 3. Click "App Details" → "Sync Policy"
 4. Enable:
    - ✅ **Auto-Create Namespace**
@@ -345,13 +345,13 @@ The application manifest above already includes auto-sync. To verify or update:
 
 ```bash
 # Enable auto-sync
-argocd app set orderflow --sync-policy automated
+argocd app set order --sync-policy automated
 
 # Enable auto-prune
-argocd app set orderflow --sync-policy automated --auto-prune
+argocd app set order --sync-policy automated --auto-prune
 
 # Enable self-heal
-argocd app set orderflow --sync-policy automated --self-heal
+argocd app set order --sync-policy automated --self-heal
 ```
 
 ---
@@ -362,10 +362,10 @@ argocd app set orderflow --sync-policy automated --self-heal
 
 ```bash
 # Via CLI
-argocd app get orderflow
+argocd app get order
 
 # Via kubectl
-kubectl get application orderflow -n argocd -o yaml
+kubectl get application order -n argocd -o yaml
 ```
 
 ### 9.2 Test GitOps Flow
@@ -385,16 +385,16 @@ kubectl get application orderflow -n argocd -o yaml
 2. **Watch ArgoCD sync:**
    ```bash
    # Watch application status
-   argocd app get orderflow --watch
+   argocd app get order --watch
    
    # Or check in UI
-   # Go to ArgoCD UI → orderflow application
+   # Go to ArgoCD UI → order application
    # You should see it automatically sync
    ```
 
 3. **Verify the change:**
    ```bash
-   kubectl get deployment frontend -n orderflow
+   kubectl get deployment frontend -n order
    # Should show 2 replicas
    ```
 
@@ -409,7 +409,7 @@ After ArgoCD successfully deploys your application, you can access it via the in
 First, verify all pods are running:
 
 ```bash
-kubectl get pods -n orderflow
+kubectl get pods -n order
 ```
 
 You should see:
@@ -425,8 +425,8 @@ Since you're using bare-metal Kubernetes with ingress, access the application us
 
 1. **Ensure `/etc/hosts` is configured:**
    ```bash
-   cat /etc/hosts | grep orderflow
-   # Should show: 44.210.23.194 orderflow.local
+   cat /etc/hosts | grep order
+   # Should show: 44.210.23.194 order.local
    ```
 
 2. **Get the Ingress NodePort:**
@@ -438,11 +438,11 @@ Since you're using bare-metal Kubernetes with ingress, access the application us
 
 3. **Access in browser:**
    ```
-   http://orderflow.local:31641
+   http://order.local:31641
    ```
 
    **Note:** If using Firefox with DNS over HTTPS, use the FlexHeaders extension:
-   - Set `Host` header to: `orderflow.local`
+   - Set `Host` header to: `order.local`
    - Access: `http://44.210.23.194:31641`
 
 **Option B: Using Direct IP with Host Header**
@@ -450,19 +450,19 @@ Since you're using bare-metal Kubernetes with ingress, access the application us
 If you prefer to use the IP directly:
 
 1. **Use browser extension** (FlexHeaders for Firefox, ModHeader for Chrome):
-   - Add header: `Host: orderflow.local`
+   - Add header: `Host: order.local`
    - Access: `http://44.210.23.194:31641`
 
 2. **Or test with curl:**
    ```bash
-   curl -H "Host: orderflow.local" http://44.210.23.194:31641/
+   curl -H "Host: order.local" http://44.210.23.194:31641/
    ```
 
 ### 10.3 Verify Application Endpoints
 
-- **Frontend:** `http://orderflow.local:31641/`
-- **Backend API:** `http://orderflow.local:31641/api/actuator/health`
-- **Backend API (Orders):** `http://orderflow.local:31641/api/v1/orders`
+- **Frontend:** `http://order.local:31641/`
+- **Backend API:** `http://order.local:31641/api/actuator/health`
+- **Backend API (Orders):** `http://order.local:31641/api/v1/orders`
 
 ### 10.4 Check Application Status in ArgoCD UI
 
@@ -477,7 +477,7 @@ If you prefer to use the IP directly:
    - Password: (your ArgoCD password)
 
 3. **View Application:**
-   - Click on the `orderflow` application
+   - Click on the `order` application
    - You'll see:
      - Application status (Synced, Healthy, etc.)
      - Resource tree showing all deployed resources
@@ -487,20 +487,20 @@ If you prefer to use the IP directly:
 ### 10.5 Quick Verification Commands
 
 ```bash
-# Check all resources in orderflow namespace
-kubectl get all -n orderflow
+# Check all resources in order namespace
+kubectl get all -n order
 
 # Check ingress
-kubectl get ingress -n orderflow
+kubectl get ingress -n order
 
 # Check application status via ArgoCD CLI
-argocd app get orderflow
+argocd app get order
 
 # Test frontend
-curl -H "Host: orderflow.local" http://44.210.23.194:31641/
+curl -H "Host: order.local" http://44.210.23.194:31641/
 
 # Test backend health
-curl -H "Host: orderflow.local" http://44.210.23.194:31641/api/actuator/health
+curl -H "Host: order.local" http://44.210.23.194:31641/api/actuator/health
 ```
 
 ---
@@ -538,7 +538,7 @@ If using a private repository, configure repository credentials:
 
 ```bash
 # Via CLI
-argocd repo add https://github.com/YOUR_USERNAME/orderflow-gitops.git \
+argocd repo add https://github.com/YOUR_USERNAME/order-gitops.git \
   --username YOUR_USERNAME \
   --password YOUR_TOKEN \
   --type git
@@ -586,7 +586,7 @@ kubectl describe pod <pod-name> -n argocd
 
 1. **Check application status:**
    ```bash
-   argocd app get orderflow
+   argocd app get order
    ```
 
 2. **Check repository connection:**
@@ -596,7 +596,7 @@ kubectl describe pod <pod-name> -n argocd
 
 3. **Manually sync:**
    ```bash
-   argocd app sync orderflow
+   argocd app sync order
    ```
 
 4. **Check application logs:**
@@ -660,13 +660,13 @@ kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[?(@.port==443)
 argocd app list
 
 # Get application status
-argocd app get orderflow
+argocd app get order
 
 # Sync application manually
-argocd app sync orderflow
+argocd app sync order
 
 # Watch application
-argocd app get orderflow --watch
+argocd app get order --watch
 
 # List repositories
 argocd repo list
@@ -695,8 +695,8 @@ After completing this guide, you should have:
 ✅ ArgoCD installed and running  
 ✅ ArgoCD UI accessible via NodePort  
 ✅ Git repository with Kubernetes manifests  
-✅ ArgoCD Application configured for Orderflow  
+✅ ArgoCD Application configured for order  
 ✅ Auto-sync enabled  
 ✅ GitOps workflow working  
 
-Your Orderflow application is now managed via GitOps - any changes pushed to Git will automatically sync to your Kubernetes cluster!
+Your order application is now managed via GitOps - any changes pushed to Git will automatically sync to your Kubernetes cluster!

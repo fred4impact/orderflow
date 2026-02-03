@@ -1,6 +1,6 @@
 # kubectl Command Cheat Sheet (Bare‑Metal / kubeadm)
 
-This document contains the **essential kubectl commands** you will need to manually manage, debug, and operate applications (e.g. **Orderflow**) on a **master/worker Kubernetes cluster** created with `kubeadm` (no EKS/AKS/GKE).
+This document contains the **essential kubectl commands** you will need to manually manage, debug, and operate applications (e.g. **order**) on a **master/worker Kubernetes cluster** created with `kubeadm` (no EKS/AKS/GKE).
 
 ---
 
@@ -20,11 +20,11 @@ kubectl config get-contexts
 kubectl get namespaces
 kubectl get ns
 
-kubectl create namespace orderflow
-kubectl delete namespace orderflow
+kubectl create namespace order
+kubectl delete namespace order
 
-kubectl get pods -n orderflow
-kubectl config set-context --current --namespace=orderflow
+kubectl get pods -n order
+kubectl config set-context --current --namespace=order
 ```
 
 ---
@@ -42,7 +42,7 @@ kubectl describe node kube-node-01
 
 ```bash
 kubectl get pods
-kubectl get pods -n orderflow
+kubectl get pods -n order
 kubectl get pods -o wide
 
 kubectl describe pod <pod-name>
@@ -137,8 +137,8 @@ kubectl describe pod <pod-name>
 ## 12. Clean‑Up Commands
 
 ```bash
-kubectl delete all --all -n orderflow
-kubectl delete pvc --all -n orderflow
+kubectl delete all --all -n order
+kubectl delete pvc --all -n order
 ```
 
 ---
@@ -148,7 +148,7 @@ kubectl delete pvc --all -n orderflow
 ```bash
 kubectl get pods -A
 kubectl get svc -A
-kubectl get all -n orderflow
+kubectl get all -n order
 ```
 
 ---
@@ -178,4 +178,4 @@ source ~/.bashrc
 
 ---
 
-✅ Ideal for: Bare‑metal Kubernetes, kubeadm labs, Orderflow project, GitOps preparation
+✅ Ideal for: Bare‑metal Kubernetes, kubeadm labs, order project, GitOps preparation

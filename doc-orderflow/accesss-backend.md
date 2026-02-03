@@ -3,7 +3,7 @@
 ## Option 1: Port-Forward (Recommended)
 
 ```bash
-kubectl port-forward svc/backend -n orderflow 8080:8080
+kubectl port-forward svc/backend -n order 8080:8080
 ```
 
 Base URL: `http://localhost:8080`
@@ -11,7 +11,7 @@ Base URL: `http://localhost:8080`
 ## Option 2: Minikube Service Tunnel
 
 ```bash
-minikube service backend -n orderflow
+minikube service backend -n order
 ```
 
 This will open a tunnel and provide a URL like:
@@ -94,7 +94,7 @@ curl http://localhost:8080/api/v1/orders/1
 
 ```bash
 # Get the URL first
-minikube service backend -n orderflow --url
+minikube service backend -n order --url
 
 # Then use that URL (e.g., http://127.0.0.1:65092)
 curl -X POST http://127.0.0.1:65092/api/v1/orders \
@@ -112,12 +112,12 @@ curl -X POST http://127.0.0.1:65092/api/v1/orders \
 If you want a stable URL, convert the backend service to NodePort:
 
 ```bash
-kubectl patch svc backend -n orderflow -p '{"spec":{"type":"NodePort"}}'
+kubectl patch svc backend -n order -p '{"spec":{"type":"NodePort"}}'
 ```
 
 Get the NodePort:
 ```bash
-kubectl get svc backend -n orderflow
+kubectl get svc backend -n order
 ```
 
 Access via:
@@ -131,11 +131,11 @@ The backend includes Swagger/OpenAPI documentation:
 
 ```bash
 # With port-forward
-kubectl port-forward svc/backend -n orderflow 8080:8080
+kubectl port-forward svc/backend -n order 8080:8080
 # Then open: http://localhost:8080/swagger-ui.html
 
 # Or with minikube service
-minikube service backend -n orderflow
+minikube service backend -n order
 # Then open: http://127.0.0.1:65092/swagger-ui.html
 ```
 
@@ -153,24 +153,24 @@ minikube service backend -n orderflow
 
 1. **Check backend logs:**
    ```bash
-   kubectl logs -n orderflow -l app=backend --tail=100
+   kubectl logs -n order -l app=backend --tail=100
    ```
 
 2. **Check if database is accessible:**
    ```bash
-   kubectl get pods -n orderflow | grep postgres
-   kubectl exec -n orderflow <postgres-pod-name> -- psql -U orderuser -d orders -c "\dt"
+   kubectl get pods -n order | grep postgres
+   kubectl exec -n order <postgres-pod-name> -- psql -U orderuser -d orders -c "\dt"
    ```
 
 3. **Verify environment variables:**
    ```bash
-   kubectl describe pod -n orderflow -l app=backend | grep -A 20 "Environment:"
+   kubectl describe pod -n order -l app=backend | grep -A 20 "Environment:"
    ```
 
 4. **Restart backend pod:**
    ```bash
-   kubectl rollout restart deployment/backend -n orderflow
-   kubectl rollout status deployment/backend -n orderflow
+   kubectl rollout restart deployment/backend -n order
+   kubectl rollout status deployment/backend -n order
    ```
 
 5. **Check database connection:**
@@ -180,7 +180,7 @@ minikube service backend -n orderflow
 
 ### Issue: 500 Error - Database Connection Failed
 **Solution:** Ensure:
-- Postgres pod is running: `kubectl get pods -n orderflow | grep postgres`
+- Postgres pod is running: `kubectl get pods -n order | grep postgres`
 - Backend has correct DB_HOST environment variable
 - Database name matches: `orders`
 

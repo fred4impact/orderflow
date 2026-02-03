@@ -1,14 +1,14 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: orderflow-ingress
-  namespace: orderflow
+  name: order-ingress
+  namespace: order
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: orderflow-orderflow-cors@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: order-order-cors@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
-  - host: orderflow.local
+  - host: order.local
     http:
       paths:
       - path: /api

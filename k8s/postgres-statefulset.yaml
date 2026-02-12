@@ -5,7 +5,7 @@ metadata:
   namespace: order
 spec:
   serviceName: postgres  # Service name for StatefulSet
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: postgres
@@ -13,6 +13,7 @@ spec:
     metadata:
       labels:
         app: postgres
+        tier: database
     spec:
       containers:
       - name: postgres

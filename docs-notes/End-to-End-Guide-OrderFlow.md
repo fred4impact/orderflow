@@ -1,6 +1,6 @@
-# Orderflow Kubernetes Project – End-to-End Guide
+# order Kubernetes Project – End-to-End Guide
 
-This document collates **all phases** of the Orderflow project, from raw Kubernetes deployment to **Helm + GitOps with ArgoCD**. It is written as a real-world DevOps learning path.
+This document collates **all phases** of the order project, from raw Kubernetes deployment to **Helm + GitOps with ArgoCD**. It is written as a real-world DevOps learning path.
 
 ---
 
@@ -138,7 +138,7 @@ Package Kubernetes manifests into a reusable Helm chart.
 ### Helm Structure
 
 ```text
-helm/orderflow/
+helm/order/
 ├── Chart.yaml
 ├── values.yaml
 └── templates/
@@ -153,7 +153,7 @@ helm/orderflow/
 ### Example Helm Install
 
 ```bash
-helm install orderflow helm/orderflow -n orderflow --create-namespace
+helm install order helm/order -n order --create-namespace
 ```
 
 ---
@@ -167,9 +167,9 @@ Separate **application code** from **deployment config**.
 ### GitOps Repo Structure
 
 ```text
-orderflow-gitops/
+order-gitops/
 ├── apps/
-│   └── orderflow/
+│   └── order/
 │       ├── application.yaml
 │       └── values/
 │           ├── dev.yaml

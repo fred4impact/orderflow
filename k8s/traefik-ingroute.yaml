@@ -1,13 +1,13 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: orderflow-frontend
-  namespace: orderflow
+  name: order-frontend
+  namespace: order
 spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`orderflow.bilarn.com`)
+    - match: Host(`order.bilarn.com`)
       kind: Rule
       services:
         - name: frontend

@@ -1,4 +1,4 @@
-# Route53 Domain Setup for OrderFlow Kubernetes Ingress
+# Route53 Domain Setup for order Kubernetes Ingress
 
 This guide walks you through setting up Route53 for your domain `bilarn.com` (registered in Namecheap) and configuring it to work with your Kubernetes ingress.
 
@@ -121,7 +121,7 @@ If you're using NodePort on bare-metal:
 
 1. **Edit the Ingress YAML**
    ```bash
-   kubectl edit ingress orderflow-ingress -n orderflow
+   kubectl edit ingress order-ingress -n order
    ```
 
    Or update the `k8s/ingress.yaml` file:
@@ -130,8 +130,8 @@ If you're using NodePort on bare-metal:
    apiVersion: networking.k8s.io/v1
    kind: Ingress
    metadata:
-     name: orderflow-ingress
-     namespace: orderflow
+     name: order-ingress
+     namespace: order
      annotations:
        nginx.ingress.kubernetes.io/rewrite-target: /
        # CORS configuration
@@ -170,8 +170,8 @@ If you're using NodePort on bare-metal:
 
 3. **Verify Ingress**
    ```bash
-   kubectl get ingress -n orderflow
-   kubectl describe ingress orderflow-ingress -n orderflow
+   kubectl get ingress -n order
+   kubectl describe ingress order-ingress -n order
    ```
 
 ---
@@ -229,8 +229,8 @@ If you're using NodePort on bare-metal:
    apiVersion: networking.k8s.io/v1
    kind: Ingress
    metadata:
-     name: orderflow-ingress
-     namespace: orderflow
+     name: order-ingress
+     namespace: order
      annotations:
        cert-manager.io/cluster-issuer: "letsencrypt-prod"
        nginx.ingress.kubernetes.io/rewrite-target: /
@@ -252,7 +252,7 @@ If you're using NodePort on bare-metal:
    ```bash
    kubectl apply -f k8s/ingress.yaml
    # Wait a few minutes for certificate issuance
-   kubectl get certificate -n orderflow
+   kubectl get certificate -n order
    ```
 
 ---
@@ -279,7 +279,7 @@ If you're using NodePort on bare-metal:
 
 1. **Check Ingress Status**
    ```bash
-   kubectl describe ingress orderflow-ingress -n orderflow
+   kubectl describe ingress order-ingress -n order
    ```
 
 2. **Verify Ingress Controller**
@@ -290,8 +290,8 @@ If you're using NodePort on bare-metal:
 
 3. **Check Services**
    ```bash
-   kubectl get svc -n orderflow
-   kubectl get endpoints -n orderflow
+   kubectl get svc -n order
+   kubectl get endpoints -n order
    ```
 
 ### Can't Access via Domain

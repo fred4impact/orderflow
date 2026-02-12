@@ -10,20 +10,20 @@ NodePort: 30080
 Open this in your browser: http://192.168.49.2:30080
 
 # view the frontned of using minikube 
-minikube service frontend -n orderflow
+minikube service frontend -n order
 
 
 # tEST TEH FRONTEND
-kubectl exec -n orderflow -it frontend-76878446b7-rqxmt -- curl localhost
+kubectl exec -n order -it frontend-76878446b7-rqxmt -- curl localhost
 
 
-kubectl logs -n orderflow pod/backend-5f46dbb9f4-rccjw
+kubectl logs -n order pod/backend-5f46dbb9f4-rccjw
 
 
-kubectl rollout status deployment/backend -n orderflow
+kubectl rollout status deployment/backend -n order
 
 
-kubectl exec -n orderflow -it frontend-76878446b7-rqxmt -- sh
+kubectl exec -n order -it frontend-76878446b7-rqxmt -- sh
 
 curl http://backend:8080/health
 ```

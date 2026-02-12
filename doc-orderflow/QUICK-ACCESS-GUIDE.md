@@ -1,4 +1,4 @@
-# Quick Access Guide - OrderFlow Application
+# Quick Access Guide - order Application
 
 After deploying the ingress in your kubeadm cluster, follow these steps to access your application:
 
@@ -45,28 +45,28 @@ Note the `INTERNAL-IP` or `EXTERNAL-IP` of your worker nodes.
 
 2. **Add this line** (replace with your actual worker node IP and NodePort):
    ```
-   <WORKER_NODE_IP> orderflow.local
+   <WORKER_NODE_IP> order.local
    ```
    
    Example:
    ```
-   192.168.1.100 orderflow.local
+   192.168.1.100 order.local
    ```
 
 3. **Access in browser:**
    ```
-   http://orderflow.local:<NODEPORT>
+   http://order.local:<NODEPORT>
    ```
    
    Example (if NodePort is 30080):
    ```
-   http://orderflow.local:30080
+   http://order.local:30080
    ```
 
 ### Option B: Direct Access with curl
 
 ```bash
-curl -H "Host: orderflow.local" http://<WORKER_NODE_IP>:<NODEPORT>
+curl -H "Host: order.local" http://<WORKER_NODE_IP>:<NODEPORT>
 ```
 
 ### Option C: Direct IP Access (may not work for all features)
@@ -81,18 +81,18 @@ http://<WORKER_NODE_IP>:<NODEPORT>
 
 1. **Check ingress status:**
    ```bash
-   kubectl get ingress -n orderflow
-   kubectl describe ingress orderflow-ingress -n orderflow
+   kubectl get ingress -n order
+   kubectl describe ingress order-ingress -n order
    ```
 
 2. **Check backend pods:**
    ```bash
-   kubectl get pods -n orderflow
+   kubectl get pods -n order
    ```
 
 3. **Test API endpoint:**
    ```bash
-   curl -H "Host: orderflow.local" http://<WORKER_NODE_IP>:<NODEPORT>/api/v1/orders
+   curl -H "Host: order.local" http://<WORKER_NODE_IP>:<NODEPORT>/api/v1/orders
    ```
 
 ## Troubleshooting
@@ -101,7 +101,7 @@ http://<WORKER_NODE_IP>:<NODEPORT>
 
 1. **Verify ingress is applied:**
    ```bash
-   kubectl get ingress -n orderflow
+   kubectl get ingress -n order
    ```
 
 2. **Check ingress controller logs:**
@@ -111,13 +111,13 @@ http://<WORKER_NODE_IP>:<NODEPORT>
 
 3. **Check backend logs:**
    ```bash
-   kubectl logs -n orderflow -l app=backend
+   kubectl logs -n order -l app=backend
    ```
 
 4. **Verify services are running:**
    ```bash
-   kubectl get svc -n orderflow
-   kubectl get pods -n orderflow
+   kubectl get svc -n order
+   kubectl get pods -n order
    ```
 
 ### If ingress controller is not installed:
@@ -144,11 +144,11 @@ kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.spec.po
 kubectl get nodes -o wide
 
 # Check ingress
-kubectl get ingress -n orderflow
+kubectl get ingress -n order
 
 # View ingress details
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl describe ingress order-ingress -n order
 
 # Test API
-curl -H "Host: orderflow.local" http://<NODE_IP>:<NODEPORT>/api/v1/orders
+curl -H "Host: order.local" http://<NODE_IP>:<NODEPORT>/api/v1/orders
 ```

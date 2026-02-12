@@ -1,7 +1,7 @@
-# Kubernetes Troubleshooting Guide for OrderFlow
+# Kubernetes Troubleshooting Guide for order
 
 ## Quick Reference
-- **Namespace**: `orderflow`
+- **Namespace**: `order`
 - **Frontend Service**: NodePort on port `30080`
 - **Backend Service**: ClusterIP on port `8080`
 - **PostgreSQL Service**: ClusterIP on port `5432`
@@ -11,17 +11,17 @@
 ## 1. Check Overall Cluster Status
 
 ```bash
-# Check all pods in orderflow namespace
-kubectl get pods -n orderflow
+# Check all pods in order namespace
+kubectl get pods -n order
 
-# Check all resources in orderflow namespace
-kubectl get all -n orderflow
+# Check all resources in order namespace
+kubectl get all -n order
 
 # Check pod status with wide output (shows node info)
-kubectl get pods -n orderflow -o wide
+kubectl get pods -n order -o wide
 
 # Check events in namespace (sorted by time)
-kubectl get events -n orderflow --sort-by='.lastTimestamp'
+kubectl get events -n order --sort-by='.lastTimestamp'
 ```
 
 ---
@@ -30,18 +30,18 @@ kubectl get events -n orderflow --sort-by='.lastTimestamp'
 
 ```bash
 # Check all pods with status
-kubectl get pods -n orderflow
+kubectl get pods -n order
 
 # Check specific pod status
-kubectl get pod <pod-name> -n orderflow
+kubectl get pod <pod-name> -n order
 
 # Describe pod (detailed information including events)
-kubectl describe pod <pod-name> -n orderflow
+kubectl describe pod <pod-name> -n order
 
 # Check pods by label
-kubectl get pods -n orderflow -l app=frontend
-kubectl get pods -n orderflow -l app=backend
-kubectl get pods -n orderflow -l app=postgres
+kubectl get pods -n order -l app=frontend
+kubectl get pods -n order -l app=backend
+kubectl get pods -n order -l app=postgres
 ```
 
 ---
@@ -50,28 +50,28 @@ kubectl get pods -n orderflow -l app=postgres
 
 ```bash
 # View logs for a specific pod
-kubectl logs <pod-name> -n orderflow
+kubectl logs <pod-name> -n order
 
 # View logs for deployment (gets latest pod)
-kubectl logs -n orderflow deployment/frontend
-kubectl logs -n orderflow deployment/backend
-kubectl logs -n orderflow deployment/postgres
+kubectl logs -n order deployment/frontend
+kubectl logs -n order deployment/backend
+kubectl logs -n order deployment/postgres
 
 # Follow logs in real-time
-kubectl logs -f <pod-name> -n orderflow
-kubectl logs -f -n orderflow deployment/backend
+kubectl logs -f <pod-name> -n order
+kubectl logs -f -n order deployment/backend
 
 # View last N lines of logs
-kubectl logs --tail=100 <pod-name> -n orderflow
+kubectl logs --tail=100 <pod-name> -n order
 
 # View logs from previous container (if pod restarted)
-kubectl logs <pod-name> -n orderflow --previous
+kubectl logs <pod-name> -n order --previous
 
 # View logs with timestamps
-kubectl logs <pod-name> -n orderflow --timestamps
+kubectl logs <pod-name> -n order --timestamps
 
 # View logs from all pods with a label
-kubectl logs -n orderflow -l app=backend
+kubectl logs -n order -l app=backend
 ```
 
 ---
@@ -80,16 +80,16 @@ kubectl logs -n orderflow -l app=backend
 
 ```bash
 # List all services
-kubectl get svc -n orderflow
+kubectl get svc -n order
 
 # Describe service (shows endpoints, selectors, etc.)
-kubectl describe svc frontend -n orderflow
-kubectl describe svc backend -n orderflow
-kubectl describe svc postgres -n orderflow
+kubectl describe svc frontend -n order
+kubectl describe svc backend -n order
+kubectl describe svc postgres -n order
 
 # Check service endpoints
-kubectl get endpoints -n orderflow
-kubectl get endpoints backend -n orderflow
+kubectl get endpoints -n order
+kubectl get endpoints backend -n order
 ```
 
 ---
@@ -98,21 +98,21 @@ kubectl get endpoints backend -n orderflow
 
 ```bash
 # List all deployments
-kubectl get deployments -n orderflow
+kubectl get deployments -n order
 
 # Describe deployment
-kubectl describe deployment frontend -n orderflow
-kubectl describe deployment backend -n orderflow
+kubectl describe deployment frontend -n order
+kubectl describe deployment backend -n order
 
 # Check deployment rollout status
-kubectl rollout status deployment/backend -n orderflow
-kubectl rollout status deployment/frontend -n orderflow
+kubectl rollout status deployment/backend -n order
+kubectl rollout status deployment/frontend -n order
 
 # View deployment history
-kubectl rollout history deployment/backend -n orderflow
+kubectl rollout history deployment/backend -n order
 
 # Rollback deployment (if needed)
-kubectl rollout undo deployment/backend -n orderflow
+kubectl rollout undo deployment/backend -n order
 ```
 
 ---
@@ -121,16 +121,16 @@ kubectl rollout undo deployment/backend -n orderflow
 
 ```bash
 # Execute command in running container
-kubectl exec -it <pod-name> -n orderflow -- /bin/sh
-kubectl exec -it <pod-name> -n orderflow -c backend -- /bin/sh
+kubectl exec -it <pod-name> -n order -- /bin/sh
+kubectl exec -it <pod-name> -n order -c backend -- /bin/sh
 
 # Run specific command in container
-kubectl exec <pod-name> -n orderflow -- env
-kubectl exec <pod-name> -n orderflow -- ps aux
+kubectl exec <pod-name> -n order -- env
+kubectl exec <pod-name> -n order -- ps aux
 
 # Check container resource usage
-kubectl top pod <pod-name> -n orderflow
-kubectl top pods -n orderflow
+kubectl top pod <pod-name> -n order
+kubectl top pods -n order
 ```
 
 ---
@@ -139,26 +139,26 @@ kubectl top pods -n orderflow
 
 ```bash
 # Port forward to test services locally
-kubectl port-forward svc/backend -n orderflow 8080:8080
-kubectl port-forward svc/frontend -n orderflow 3000:80
-kubectl port-forward svc/postgres -n orderflow 5432:5432
+kubectl port-forward svc/backend -n order 8080:8080
+kubectl port-forward svc/frontend -n order 3000:80
+kubectl port-forward svc/postgres -n order 5432:5432
 
 # Test backend API (after port-forward)
 curl http://localhost:8080/api/v1/orders
 curl http://localhost:8080/actuator/health
 
 # Test from within cluster (using a debug pod)
-kubectl run -it --rm debug --image=curlimages/curl --restart=Never -n orderflow -- sh
+kubectl run -it --rm debug --image=curlimages/curl --restart=Never -n order -- sh
 # Then inside the pod:
-# curl http://backend.orderflow.svc.cluster.local:8080/api/v1/orders
-# curl http://frontend.orderflow.svc.cluster.local:80/health
+# curl http://backend.order.svc.cluster.local:8080/api/v1/orders
+# curl http://frontend.order.svc.cluster.local:80/health
 ```
 
 ## 7.1. Access Swagger/OpenAPI Documentation
 
 ```bash
 # Port forward backend service to access Swagger UI
-kubectl port-forward svc/backend -n orderflow 8080:8080
+kubectl port-forward svc/backend -n order 8080:8080
 
 # Keep the port-forward running, then open in browser:
 # Swagger UI: http://localhost:8080/swagger-ui.html
@@ -166,14 +166,14 @@ kubectl port-forward svc/backend -n orderflow 8080:8080
 # API Docs (YAML): http://localhost:8080/api-docs.yaml
 
 # Alternative: Port forward directly to pod (if service not available)
-BACKEND_POD=$(kubectl get pods -n orderflow -l app=backend -o jsonpath='{.items[0].metadata.name}')
-kubectl port-forward pod/$BACKEND_POD -n orderflow 8080:8080
+BACKEND_POD=$(kubectl get pods -n order -l app=backend -o jsonpath='{.items[0].metadata.name}')
+kubectl port-forward pod/$BACKEND_POD -n order 8080:8080
 
 # Access Swagger from within cluster (using debug pod)
-kubectl run -it --rm swagger-test --image=curlimages/curl --restart=Never -n orderflow -- sh
+kubectl run -it --rm swagger-test --image=curlimages/curl --restart=Never -n order -- sh
 # Inside pod:
-# curl http://backend.orderflow.svc.cluster.local:8080/swagger-ui.html
-# curl http://backend.orderflow.svc.cluster.local:8080/api-docs
+# curl http://backend.order.svc.cluster.local:8080/swagger-ui.html
+# curl http://backend.order.svc.cluster.local:8080/api-docs
 ```
 
 ---
@@ -182,16 +182,16 @@ kubectl run -it --rm swagger-test --image=curlimages/curl --restart=Never -n ord
 
 ```bash
 # View environment variables in pod
-kubectl exec <pod-name> -n orderflow -- env | grep -i cors
-kubectl exec <pod-name> -n orderflow -- env | grep -i spring
+kubectl exec <pod-name> -n order -- env | grep -i cors
+kubectl exec <pod-name> -n order -- env | grep -i spring
 
 # Check ConfigMaps (if any)
-kubectl get configmaps -n orderflow
-kubectl describe configmap <configmap-name> -n orderflow
+kubectl get configmaps -n order
+kubectl describe configmap <configmap-name> -n order
 
 # Check Secrets (if any)
-kubectl get secrets -n orderflow
-kubectl describe secret <secret-name> -n orderflow
+kubectl get secrets -n order
+kubectl describe secret <secret-name> -n order
 ```
 
 ---
@@ -200,15 +200,15 @@ kubectl describe secret <secret-name> -n orderflow
 
 ```bash
 # Restart deployment (rolling restart)
-kubectl rollout restart deployment/backend -n orderflow
-kubectl rollout restart deployment/frontend -n orderflow
+kubectl rollout restart deployment/backend -n order
+kubectl rollout restart deployment/frontend -n order
 
 # Delete pod to force recreation
-kubectl delete pod <pod-name> -n orderflow
+kubectl delete pod <pod-name> -n order
 
 # Scale deployment
-kubectl scale deployment/backend -n orderflow --replicas=2
-kubectl scale deployment/backend -n orderflow --replicas=1
+kubectl scale deployment/backend -n order --replicas=2
+kubectl scale deployment/backend -n order --replicas=1
 ```
 
 ---
@@ -217,10 +217,10 @@ kubectl scale deployment/backend -n orderflow --replicas=1
 
 ```bash
 # List network policies
-kubectl get networkpolicies -n orderflow
+kubectl get networkpolicies -n order
 
 # Describe network policy
-kubectl describe networkpolicy <policy-name> -n orderflow
+kubectl describe networkpolicy <policy-name> -n order
 ```
 
 ---
@@ -232,10 +232,10 @@ kubectl describe networkpolicy <policy-name> -n orderflow
 kubectl get pv
 
 # List persistent volume claims
-kubectl get pvc -n orderflow
+kubectl get pvc -n order
 
 # Describe PVC
-kubectl describe pvc <pvc-name> -n orderflow
+kubectl describe pvc <pvc-name> -n order
 ```
 
 ---
@@ -245,44 +245,44 @@ kubectl describe pvc <pvc-name> -n orderflow
 ### Issue: Pod in CrashLoopBackOff
 ```bash
 # Check logs
-kubectl logs <pod-name> -n orderflow --previous
+kubectl logs <pod-name> -n order --previous
 
 # Check events
-kubectl describe pod <pod-name> -n orderflow
+kubectl describe pod <pod-name> -n order
 
 # Check if image exists
-kubectl describe pod <pod-name> -n orderflow | grep Image
+kubectl describe pod <pod-name> -n order | grep Image
 ```
 
 ### Issue: Pod not starting
 ```bash
 # Check pod events
-kubectl describe pod <pod-name> -n orderflow
+kubectl describe pod <pod-name> -n order
 
 # Check if image pull is successful
-kubectl get events -n orderflow --field-selector involvedObject.name=<pod-name>
+kubectl get events -n order --field-selector involvedObject.name=<pod-name>
 ```
 
 ### Issue: Service not accessible
 ```bash
 # Check service endpoints
-kubectl get endpoints <service-name> -n orderflow
+kubectl get endpoints <service-name> -n order
 
 # Check if pods have correct labels
-kubectl get pods -n orderflow --show-labels
-kubectl describe svc <service-name> -n orderflow
+kubectl get pods -n order --show-labels
+kubectl describe svc <service-name> -n order
 ```
 
 ### Issue: CORS errors (403)
 ```bash
 # Check backend logs
-kubectl logs -n orderflow deployment/backend | grep -i cors
+kubectl logs -n order deployment/backend | grep -i cors
 
 # Verify CORS environment variable
-kubectl exec -n orderflow deployment/backend -- env | grep CORS
+kubectl exec -n order deployment/backend -- env | grep CORS
 
 # Check backend configuration
-kubectl describe deployment backend -n orderflow
+kubectl describe deployment backend -n order
 ```
 
 ---
@@ -291,7 +291,7 @@ kubectl describe deployment backend -n orderflow
 
 ```bash
 #!/bin/bash
-NAMESPACE="orderflow"
+NAMESPACE="order"
 
 echo "=== Checking Pods ==="
 kubectl get pods -n $NAMESPACE
@@ -321,25 +321,25 @@ kubectl get endpoints -n $NAMESPACE
 
 ```bash
 # Get frontend NodePort URL
-kubectl get svc frontend -n orderflow -o jsonpath='{.spec.ports[0].nodePort}'
+kubectl get svc frontend -n order -o jsonpath='{.spec.ports[0].nodePort}'
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
 echo "Frontend URL: http://$NODE_IP:30080"
 
 # Get backend pod name
-kubectl get pods -n orderflow -l app=backend -o jsonpath='{.items[0].metadata.name}'
+kubectl get pods -n order -l app=backend -o jsonpath='{.items[0].metadata.name}'
 
 # Check if namespace exists
-kubectl get namespace orderflow
+kubectl get namespace order
 
 # Create namespace if missing
-kubectl create namespace orderflow
+kubectl create namespace order
 ```
 
 ## 14.1. Quick Access to Swagger UI
 
 ```bash
 # One-liner to access Swagger (run in background)
-kubectl port-forward svc/backend -n orderflow 8080:8080 &
+kubectl port-forward svc/backend -n order 8080:8080 &
 
 # Then open in browser:
 # Swagger UI: http://localhost:8080/swagger-ui.html
@@ -356,13 +356,13 @@ kubectl port-forward svc/backend -n orderflow 8080:8080 &
 
 ```bash
 # Delete all resources in namespace
-kubectl delete all --all -n orderflow
+kubectl delete all --all -n order
 
 # Delete specific deployment
-kubectl delete deployment backend -n orderflow
+kubectl delete deployment backend -n order
 
 # Delete namespace (deletes everything)
-kubectl delete namespace orderflow
+kubectl delete namespace order
 ```
 
 ---
@@ -371,7 +371,7 @@ kubectl delete namespace orderflow
 
 ### 1. Rebuild Backend Docker Image
 ```bash
-cd /Users/mac/Documents/DEVOPS-PORTFOLIOS/orderflow/backend
+cd /Users/mac/Documents/DEVOPS-PORTFOLIOS/order/backend
 docker build -t runtesting/ordeflow-backend:1.2 .
 docker push runtesting/ordeflow-backend:1.2
 ```
@@ -379,31 +379,31 @@ docker push runtesting/ordeflow-backend:1.2
 ### 2. Update Kubernetes Deployment
 ```bash
 # Option A: Update image in YAML and apply
-kubectl apply -f k8s/backend.yaml -n orderflow
+kubectl apply -f k8s/backend.yaml -n order
 
 # Option B: Set image directly
-kubectl set image deployment/backend backend=runtesting/ordeflow-backend:1.2 -n orderflow
+kubectl set image deployment/backend backend=runtesting/ordeflow-backend:1.2 -n order
 
 # Option C: Restart to pick up new environment variables (if only env changed)
-kubectl rollout restart deployment/backend -n orderflow
+kubectl rollout restart deployment/backend -n order
 ```
 
 ### 3. Verify Deployment
 ```bash
 # Watch rollout status
-kubectl rollout status deployment/backend -n orderflow
+kubectl rollout status deployment/backend -n order
 
 # Check new pod is running
-kubectl get pods -n orderflow -l app=backend
+kubectl get pods -n order -l app=backend
 
 # Check logs
-kubectl logs -f -n orderflow deployment/backend
+kubectl logs -f -n order deployment/backend
 ```
 
 ---
 
 ## Notes
-- Replace `<pod-name>` with actual pod name from `kubectl get pods -n orderflow`
-- All commands assume namespace is `orderflow`
-- Use `-n orderflow` flag for all namespace-specific commands
+- Replace `<pod-name>` with actual pod name from `kubectl get pods -n order`
+- All commands assume namespace is `order`
+- Use `-n order` flag for all namespace-specific commands
 - For production, consider adding resource limits and health checks

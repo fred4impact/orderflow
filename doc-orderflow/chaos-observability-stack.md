@@ -94,21 +94,21 @@ kubectl apply -f https://litmuschaos.github.io/litmus/chaos-resources.yaml -n li
 kubectl get chaosexperiments -n litmus
 
 ------------------------------------------------------------
-# 9 — Label Orderflow Frontend (Chaos Target)
+# 9 — Label order Frontend (Chaos Target)
 ------------------------------------------------------------
 
-kubectl label deploy frontend app=orderflow-frontend \
--n orderflow --overwrite
+kubectl label deploy frontend app=order-frontend \
+-n order --overwrite
 
 ------------------------------------------------------------
 # 10 — Create Chaos RBAC
 ------------------------------------------------------------
 
-kubectl create sa chaos-admin -n orderflow
+kubectl create sa chaos-admin -n order
 
 kubectl create clusterrolebinding chaos-admin-binding \
 --clusterrole=cluster-admin \
---serviceaccount=orderflow:chaos-admin
+--serviceaccount=order:chaos-admin
 
 ------------------------------------------------------------
 # 11 — Run First Chaos Test From Dashboard
@@ -122,8 +122,8 @@ Pod Delete
 
 Target:
 
-namespace: orderflow
-label: app=orderflow-frontend
+namespace: order
+label: app=order-frontend
 
 Run experiment.
 
@@ -133,11 +133,11 @@ Run experiment.
 
 Watch pods:
 
-kubectl get pods -n orderflow -w
+kubectl get pods -n order -w
 
 Check app still reachable via Traefik:
 
-curl -H "Host: orderflow.local" http://localhost:8090
+curl -H "Host: order.local" http://localhost:8090
 
 ------------------------------------------------------------
 # 13 — Import Grafana Chaos Dashboards
@@ -165,7 +165,7 @@ Browser
 ↓
 Traefik
 ↓
-Orderflow
+order
 
 AND
 

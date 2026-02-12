@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+agent any
 
     tools {
         nodejs 'node-18'
@@ -7,7 +7,7 @@ pipeline {
 
     environment {
         APP_NAME = 'order-ui'
-        DOCKER_IMAGE = "orderflow-frontend:${BUILD_NUMBER}"
+        DOCKER_IMAGE = "order-frontend:${BUILD_NUMBER}"
     }
 
     stages {
@@ -78,4 +78,5 @@ pipeline {
             echo "❌ Frontend DevSecOps Pipeline Failed"
         }
     }
+
 }

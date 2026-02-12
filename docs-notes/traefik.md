@@ -1,6 +1,6 @@
-# Traefik Setup for OrderFlow Application
+# Traefik Setup for order Application
 
-This guide covers implementing Traefik as the ingress controller for the OrderFlow application on Kubernetes—**using Minikube** and **without Minikube** (bare-metal / cloud). Differences between the two environments are called out clearly.
+This guide covers implementing Traefik as the ingress controller for the order application on Kubernetes—**using Minikube** and **without Minikube** (bare-metal / cloud). Differences between the two environments are called out clearly.
 
 ---
 
@@ -10,7 +10,7 @@ This guide covers implementing Traefik as the ingress controller for the OrderFl
 2. [Prerequisites](#2-prerequisites)
 3. [Using Minikube](#3-using-minikube)
 4. [Not Using Minikube (Bare-Metal / Cloud)](#4-not-using-minikube-bare-metal--cloud)
-5. [OrderFlow Ingress and CORS](#5-orderflow-ingress-and-cors)
+5. [order Ingress and CORS](#5-order-ingress-and-cors)
 6. [Access and Verification](#6-access-and-verification)
 7. [Differences Summary: Minikube vs Non-Minikube](#7-differences-summary-minikube-vs-non-minikube)
 8. [Troubleshooting](#8-troubleshooting)
@@ -28,7 +28,7 @@ Traefik is a modern reverse proxy and ingress controller for Kubernetes that pro
 - **Dashboard**: Built-in UI for routes and services
 - **TLS**: Easy certificate management (including Let’s Encrypt)
 
-### 1.2 OrderFlow Architecture with Traefik
+### 1.2 order Architecture with Traefik
 
 ```
                     Traefik (Ingress)
@@ -36,7 +36,7 @@ Traefik is a modern reverse proxy and ingress controller for Kubernetes that pro
          ┌─────────────────┼─────────────────┐
          │                 │                 │
          ▼                 ▼                 ▼
-   Host: orderflow.local
+   Host: order.local
          │
          ├── path /      → frontend Service (port 80)   → Frontend Pods
          └── path /api   → backend Service (port 8080)  → Backend Pods (Spring Boot)
@@ -54,18 +54,18 @@ Traefik is a modern reverse proxy and ingress controller for Kubernetes that pro
 - **Kubernetes cluster** (Minikube or other)
 - **kubectl** configured for your cluster
 - **Helm 3** (recommended for installing Traefik)
-- **OrderFlow** already deployed in namespace `orderflow` (frontend, backend, postgres, and their Services)
+- **order** already deployed in namespace `order` (frontend, backend, postgres, and their Services)
 
-Verify OrderFlow is running:
+Verify order is running:
 
 ```bash
-kubectl get pods,svc -n orderflow
+kubectl get pods,svc -n order
 ```
 
-Ensure the `orderflow` namespace exists:
+Ensure the `order` namespace exists:
 
 ```bash
-kubectl create namespace orderflow   # if not already created
+kubectl create namespace order   # if not already created
 ```
 
 ---
@@ -80,7 +80,7 @@ These steps assume you are using **Minikube** as your local Kubernetes cluster.
 minikube start
 ```
 
-Optional: more resources for OrderFlow + Traefik:
+Optional: more resources for order + Traefik:
 
 ```bash
 minikube start --cpus=4 --memory=8192
@@ -165,15 +165,15 @@ minikube ip
 
 Example: `192.168.49.2`. Add to `/etc/hosts` (or `C:\Windows\System32\drivers\etc\hosts` on Windows):
 
-echo "$(minikube ip) orderflow.local" | sudo tee -a /etc/hosts\n
+echo "$(minikube ip) order.local" | sudo tee -a /etc/hosts\n
 
- cat /etc/hosts | grep orderflow\n
+ cat /etc/hosts | grep order\n
 echo "$(minikube ip) traefik.minikube.local" | sudo tee -a /etc/hosts\n
     
 
-192.168.49.2 orderflow.local
+192.168.49.2 order.local
 ```
-192.168.49.2    orderflow.local
+192.168.49.2    order.local
 192.168.49.2    traefik.minikube.local
 ```
 
@@ -193,15 +193,15 @@ Then get the “external” IP of the Traefik service (may take a minute):
 kubectl get svc -n traefik
 ```
 
-If the Traefik service gets an `EXTERNAL-IP` (e.g. `10.x.x.x`), add that IP to your hosts file for `orderflow.local` and `traefik.minikube.local`.  
-**Note:** With NodePort and no tunnel, you still access via `http://orderflow.local:30080` (see step 3.8).
+If the Traefik service gets an `EXTERNAL-IP` (e.g. `10.x.x.x`), add that IP to your hosts file for `order.local` and `traefik.minikube.local`.  
+**Note:** With NodePort and no tunnel, you still access via `http://order.local:30080` (see step 3.8).
 
-### 3.7 Apply OrderFlow Ingress (Minikube)
+### 3.7 Apply order Ingress (Minikube)
 
-Use the OrderFlow Ingress manifest that references Traefik (see [Section 5](#5-orderflow-ingress-and-cors)):
+Use the order Ingress manifest that references Traefik (see [Section 5](#5-order-ingress-and-cors)):
 
 ```bash
-kubectl apply -f k8s/orderflow-ingress.yaml
+kubectl apply -f k8s/order-ingress.yaml
 ```
 
 Ensure the Ingress uses `ingressClassName: traefik` and that the Traefik Helm chart has created the `traefik` IngressClass:
@@ -210,17 +210,17 @@ Ensure the Ingress uses `ingressClassName: traefik` and that the Traefik Helm ch
 kubectl get ingressclass
 ```
 
-### 3.8 Access OrderFlow on Minikube
+### 3.8 Access order on Minikube
 
 - **If using NodePort (no tunnel):**  
   Use the NodePort shown by `kubectl get svc -n traefik` (e.g. `80:31312/TCP` → use port **31312**).  
   With fixed ports in values (30080/30443):  
-  - Frontend/API: `http://orderflow.local:30080`  
+  - Frontend/API: `http://order.local:30080`  
   - Dashboard: `http://traefik.minikube.local:30080/dashboard/`  
-  If you use whatever port Kubernetes assigns (e.g. 31312), use that in the URL instead: `http://orderflow.local:31312`.
+  If you use whatever port Kubernetes assigns (e.g. 31312), use that in the URL instead: `http://order.local:31312`.
 
 - **If using `minikube tunnel` and Traefik has an EXTERNAL-IP:**  
-  - Frontend/API: `http://orderflow.local` (port 80)  
+  - Frontend/API: `http://order.local` (port 80)  
   - Dashboard: `http://traefik.minikube.local/dashboard/`
 
 ---
@@ -279,7 +279,7 @@ Get the external address (may take 1–2 minutes):
 kubectl get svc -n traefik -w
 ```
 
-Use the `EXTERNAL-IP` or `EXTERNAL-HOSTNAME` for DNS (e.g. `orderflow.yourdomain.com` → that IP/hostname).
+Use the `EXTERNAL-IP` or `EXTERNAL-HOSTNAME` for DNS (e.g. `order.yourdomain.com` → that IP/hostname).
 
 ### 4.4 Install Traefik (Bare-Metal – NodePort)
 
@@ -331,11 +331,11 @@ kubectl get nodes -o wide
 Add to your hosts file, using **port 30080** when opening in browser:
 
 ```
-<NODE_IP>    orderflow.local
+<NODE_IP>    order.local
 <NODE_IP>    traefik.local
 ```
 
-Access: `http://orderflow.local:30080`.
+Access: `http://order.local:30080`.
 
 ### 4.5 Ensure IngressClass Exists
 
@@ -345,42 +345,42 @@ Traefik Helm chart usually creates an IngressClass named `traefik`. Verify:
 kubectl get ingressclass
 ```
 
-### 4.6 Apply OrderFlow Ingress (Non-Minikube)
+### 4.6 Apply order Ingress (Non-Minikube)
 
-Same as Minikube: use the Traefik-based OrderFlow Ingress.
+Same as Minikube: use the Traefik-based order Ingress.
 
 ```bash
-kubectl apply -f k8s/orderflow-ingress.yaml
+kubectl apply -f k8s/order-ingress.yaml
 ```
 
-Update `/etc/hosts` (or DNS) so the host used in the Ingress (e.g. `orderflow.local`) points to:
+Update `/etc/hosts` (or DNS) so the host used in the Ingress (e.g. `order.local`) points to:
 
 - **Cloud:** LoadBalancer EXTERNAL-IP or hostname.
 - **Bare-metal:** Node IP; use port 30080 in the URL unless you put another proxy in front.
 
 ---
 
-## 5. OrderFlow Ingress and CORS
+## 5. order Ingress and CORS
 
 Use a single Ingress that routes `/` to the frontend and `/api` to the backend, with `ingressClassName: traefik`.
 
 ### 5.1 Ingress Manifest (Traefik)
 
-File: `k8s/orderflow-ingress.yaml`. This uses the **custom-response-headers** annotation for CORS (no extra CRD required).
+File: `k8s/order-ingress.yaml`. This uses the **custom-response-headers** annotation for CORS (no extra CRD required).
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: orderflow-ingress
-  namespace: orderflow
+  name: order-ingress
+  namespace: order
   annotations:
     # CORS for backend API (Traefik; multiple headers separated by ||)
     traefik.ingress.kubernetes.io/custom-response-headers: "Access-Control-Allow-Origin:*||Access-Control-Allow-Methods:GET,POST,PUT,DELETE,OPTIONS||Access-Control-Allow-Headers:DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization||Access-Control-Max-Age:1728000"
 spec:
   ingressClassName: traefik
   rules:
-    - host: orderflow.local
+    - host: order.local
       http:
         paths:
           - path: /api
@@ -409,8 +409,8 @@ To attach CORS only to the backend, use a Traefik Middleware and reference it fr
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: orderflow-cors
-  namespace: orderflow
+  name: order-cors
+  namespace: order
 spec:
   headers:
     accessControlAllowMethods:
@@ -433,7 +433,7 @@ Apply after Traefik is installed (Traefik CRDs are installed with the Helm chart
 kubectl apply -f k8s/traefik-cors-middleware.yaml
 ```
 
-Then use the Ingress annotation `traefik.ingress.kubernetes.io/router.middlewares: orderflow-orderflow-cors@kubernetescrd` (namespace-middlewarename) to apply this middleware. If you use the `custom-response-headers` annotation in section 5.1, you do not need this Middleware.
+Then use the Ingress annotation `traefik.ingress.kubernetes.io/router.middlewares: order-order-cors@kubernetescrd` (namespace-middlewarename) to apply this middleware. If you use the `custom-response-headers` annotation in section 5.1, you do not need this Middleware.
 
 ---
 
@@ -442,31 +442,31 @@ Then use the Ingress annotation `traefik.ingress.kubernetes.io/router.middleware
 ### 6.1 Check Ingress and Traefik
 
 ```bash
-kubectl get ingress -n orderflow
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl get ingress -n order
+kubectl describe ingress order-ingress -n order
 kubectl get pods,svc -n traefik
 ```
 
 ### 6.2 Test Frontend
 
 ```bash
-curl -H "Host: orderflow.local" http://<TRAEFIK_IP>:<PORT>/
+curl -H "Host: order.local" http://<TRAEFIK_IP>:<PORT>/
 ```
 
-On Minikube with NodePort: `curl -H "Host: orderflow.local" http://$(minikube ip):30080/`
+On Minikube with NodePort: `curl -H "Host: order.local" http://$(minikube ip):30080/`
 
 ### 6.3 Test Backend API
 
 ```bash
-curl -H "Host: orderflow.local" http://<TRAEFIK_IP>:<PORT>/api/v1/orders
+curl -H "Host: order.local" http://<TRAEFIK_IP>:<PORT>/api/v1/orders
 
-curl -H "Host: orderflow.local" http://192.168.49.2:30080/api/v1/orders
+curl -H "Host: order.local" http://192.168.49.2:30080/api/v1/orders
 ```
 
 ### 6.4 Browser
 
-- Ensure `orderflow.local` (and port if NodePort) is in your hosts file.
-- Open `http://orderflow.local` (or `http://orderflow.local:30080` on NodePort).
+- Ensure `order.local` (and port if NodePort) is in your hosts file.
+- Open `http://order.local` (or `http://order.local:30080` on NodePort).
 - Create/list orders; the UI calls `/api/v1`, which Traefik routes to the backend.
 
 ---
@@ -479,11 +479,11 @@ curl -H "Host: orderflow.local" http://192.168.49.2:30080/api/v1/orders
 | **Traefik service type** | `NodePort` (e.g. 30080) | `NodePort` or hostNetwork | `LoadBalancer` |
 | **Getting an IP** | `minikube ip` or `minikube tunnel` | Worker node IP | EXTERNAL-IP from cloud LB |
 | **Port in URL** | Often `:30080` unless using tunnel | Often `:30080` (or your nodePort) | Usually port 80/443 |
-| **Hosts file** | `minikube ip` → orderflow.local | Node IP → orderflow.local | LB IP/hostname → orderflow.local |
+| **Hosts file** | `minikube ip` → order.local | Node IP → order.local | LB IP/hostname → order.local |
 | **DNS** | Optional | Optional | Often use real DNS to LB |
 | **Ingress YAML** | Same | Same | Same |
 
-The **same** `k8s/orderflow-ingress.yaml` (with `ingressClassName: traefik`) is used in all environments; only the way Traefik is installed (values: NodePort vs LoadBalancer) and how you resolve `orderflow.local` and which port you use differ.
+The **same** `k8s/order-ingress.yaml` (with `ingressClassName: traefik`) is used in all environments; only the way Traefik is installed (values: NodePort vs LoadBalancer) and how you resolve `order.local` and which port you use differ.
 
 ---
 
@@ -493,27 +493,27 @@ The **same** `k8s/orderflow-ingress.yaml` (with `ingressClassName: traefik`) is 
 
 - Confirm Traefik is running: `kubectl get pods -n traefik`
 - Confirm IngressClass: `kubectl get ingressclass` and that the Ingress uses `ingressClassName: traefik`
-- Check Ingress: `kubectl describe ingress orderflow-ingress -n orderflow`
+- Check Ingress: `kubectl describe ingress order-ingress -n order`
 
 ### 502 Bad Gateway
 
-- Backend/frontend pods and Services must exist in `orderflow`: `kubectl get pods,svc -n orderflow`
+- Backend/frontend pods and Services must exist in `order`: `kubectl get pods,svc -n order`
 - Backend must listen on the port specified in the Service (8080).
 - Check Traefik logs: `kubectl logs -n traefik -l app.kubernetes.io/name=traefik -f`
 
 ### CORS errors in browser
 
 - Ensure CORS is set either via Ingress `custom-response-headers` or via a Traefik Middleware and annotation.
-- Backend’s `CorsConfig` in OrderFlow can still allow origins; having CORS at Traefik and at the app is fine.
+- Backend’s `CorsConfig` in order can still allow origins; having CORS at Traefik and at the app is fine.
 
 ### Wrong host (e.g. 404 from Traefik)
 
-- Always send the same `Host` as in the Ingress rule (e.g. `orderflow.local`), via hosts file or `curl -H "Host: orderflow.local"`.
+- Always send the same `Host` as in the Ingress rule (e.g. `order.local`), via hosts file or `curl -H "Host: order.local"`.
 
-### Minikube: cannot reach orderflow.local
+### Minikube: cannot reach order.local
 
-- Confirm hosts file: `orderflow.local` → `minikube ip` (or EXTERNAL-IP if using tunnel).
-- If using NodePort, use `http://orderflow.local:30080`.
+- Confirm hosts file: `order.local` → `minikube ip` (or EXTERNAL-IP if using tunnel).
+- If using NodePort, use `http://order.local:30080`.
 
 ### Non-Minikube: cannot reach from outside
 
@@ -529,17 +529,17 @@ The **same** `k8s/orderflow-ingress.yaml` (with `ingressClassName: traefik`) is 
 helm repo add traefik https://traefik.github.io/charts && helm repo update
 helm install traefik traefik/traefik -n traefik -f traefik-minikube-values.yaml --wait --create-namespace
 
-# Apply OrderFlow Ingress
-kubectl apply -f k8s/orderflow-ingress.yaml
+# Apply order Ingress
+kubectl apply -f k8s/order-ingress.yaml
 
 # Minikube: get IP and open app
 minikube ip
-# Add to /etc/hosts: <IP> orderflow.local
-# Browser: http://orderflow.local:30080
+# Add to /etc/hosts: <IP> order.local
+# Browser: http://order.local:30080
 
 # Check Traefik and Ingress
 kubectl get svc,pods -n traefik
-kubectl get ingress -n orderflow
+kubectl get ingress -n order
 
 
 

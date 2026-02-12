@@ -5,7 +5,7 @@ This guide walks you through setting up NGINX Ingress Controller on a bare-metal
 ## Prerequisites
 
 - Kubernetes cluster running on EC2 (master + worker nodes)
-- Orderflow application already deployed
+- order application already deployed
 - `kubectl` configured to access your cluster
 - Access to worker node IP addresses
 
@@ -16,7 +16,7 @@ This guide walks you through setting up NGINX Ingress Controller on a bare-metal
 First, check your current service configuration:
 
 ```bash
-kubectl get svc -n orderflow
+kubectl get svc -n order
 ```
 
 You should see your frontend and backend services. Note that for Ingress to work properly, services should be `ClusterIP` type (not NodePort).
@@ -30,7 +30,7 @@ If your services are currently NodePort, update them to ClusterIP:
 ### Update Frontend Service
 
 ```bash
-kubectl get svc frontend -n orderflow -o yaml > frontend-service-clusterip.yaml
+kubectl get svc frontend -n order -o yaml > frontend-service-clusterip.yaml
 ```
 
 Edit the file and change:
@@ -44,7 +44,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
-  namespace: orderflow
+  namespace: order
 spec:
   type: ClusterIP  # Changed from NodePort
   selector:
@@ -63,7 +63,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend
-  namespace: orderflow
+  namespace: order
 spec:
   type: ClusterIP
   selector:
@@ -134,20 +134,20 @@ Note the `INTERNAL-IP` or `EXTERNAL-IP` of your worker nodes. If you're accessin
 
 ## Step 6: Create Ingress Resource
 
-Create the ingress resource for your orderflow application:
+Create the ingress resource for your order application:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: orderflow-ingress
-  namespace: orderflow
+  name: order-ingress
+  namespace: order
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
-    - host: orderflow.local
+    - host: order.local
       http:
         paths:
           - path: /
@@ -175,8 +175,8 @@ kubectl apply -f ingress.yaml
 Verify the ingress:
 
 ```bash
-kubectl get ingress -n orderflow
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl get ingress -n order
+kubectl describe ingress order-ingress -n order
 ```
 
 ---
@@ -192,7 +192,7 @@ Get the NodePort from the ingress controller service:
 ```bash
 kubectl get svc ingress-nginx-controller -n ingress-nginx
 ```
-44.210.23.194  orderflow.local
+44.210.23.194  order.local
 http://44.210.23.194:31641
 
 Access the application using:
@@ -230,22 +230,22 @@ This is the cleaner approach. You'll map the domain name to your worker node IP.
 
    Add this line (replace with your actual worker node IP):
    ```
-   <WORKER_NODE_IP> orderflow.local
+   <WORKER_NODE_IP> order.local
    ```
 
    Example:
    ```
-   54.123.45.67 orderflow.local
+   54.123.45.67 order.local
    ```
 
 4. **Access the application:**
    ```
-   http://orderflow.local:<NODEPORT>
+   http://order.local:<NODEPORT>
    ```
 
    For example, if NodePort is `30080`:
    ```
-   http://orderflow.local:30080
+   http://order.local:30080
    ```
 
 ### Option C: Use Port 80 (Requires Root/Privileged Access)
@@ -270,7 +270,7 @@ If you want to access without specifying a port, you can:
 
 2. **Then access via:**
    ```
-   http://orderflow.local
+   http://order.local
    ```
 
    **Note:** Using port 80 requires running kube-proxy with root privileges, which may not be recommended for security reasons.
@@ -286,7 +286,7 @@ If you're using Firefox with DNS over HTTPS (DoH) enabled, Firefox may bypass `/
 2. **Configure the extension:**
    - Add a new header rule:
      - **Header Name:** `Host`
-     - **Header Value:** `orderflow.local`
+     - **Header Value:** `order.local`
      - Enable the rule
 
 3. **Access the application:**
@@ -301,13 +301,13 @@ If you're using Firefox with DNS over HTTPS (DoH) enabled, Firefox may bypass `/
    http://172.31.64.54:31641
    ```
 
-   The extension will automatically add the `Host: orderflow.local` header, allowing the ingress to route correctly.
+   The extension will automatically add the `Host: order.local` header, allowing the ingress to route correctly.
 
 **Alternative:** Disable DNS over HTTPS in Firefox:
 - Go to `about:preferences#privacy`
 - Find "DNS over HTTPS"
 - Set it to "Off"
-- Then `http://orderflow.local:<NODEPORT>` should work directly
+- Then `http://order.local:<NODEPORT>` should work directly
 
 ---
 
@@ -315,17 +315,17 @@ If you're using Firefox with DNS over HTTPS (DoH) enabled, Firefox may bypass `/
 
 1. **Test frontend:**
    ```bash
-   curl -H "Host: orderflow.local" http://<WORKER_NODE_IP>:<NODEPORT>/
+   curl -H "Host: order.local" http://<WORKER_NODE_IP>:<NODEPORT>/
    ```
 
 2. **Test backend API:**
    ```bash
-   curl -H "Host: orderflow.local" http://<WORKER_NODE_IP>:<NODEPORT>/api/health
+   curl -H "Host: order.local" http://<WORKER_NODE_IP>:<NODEPORT>/api/health
    ```
 
 3. **Open in browser:**
-   - If using `/etc/hosts`: `http://orderflow.local:<NODEPORT>`
-   - If using direct IP: `http://<WORKER_NODE_IP>:<NODEPORT>` (add `Host: orderflow.local` header)
+   - If using `/etc/hosts`: `http://order.local:<NODEPORT>`
+   - If using direct IP: `http://<WORKER_NODE_IP>:<NODEPORT>` (add `Host: order.local` header)
 
 ---
 
@@ -340,18 +340,18 @@ kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
 ### Check Ingress Status
 
 ```bash
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl describe ingress order-ingress -n order
 ```
 
 ### Verify Services are Accessible
 
 ```bash
 # Test frontend service directly
-kubectl port-forward svc/frontend 8080:80 -n orderflow
+kubectl port-forward svc/frontend 8080:80 -n order
 # Then access http://localhost:8080
 
 # Test backend service directly
-kubectl port-forward svc/backend 8081:8080 -n orderflow
+kubectl port-forward svc/backend 8081:8080 -n order
 # Then access http://localhost:8081
 ```
 
@@ -364,19 +364,19 @@ kubectl port-forward svc/backend 8081:8080 -n orderflow
    ```
 
 2. **Services not found:**
-   - Ensure services are in the same namespace (`orderflow`)
+   - Ensure services are in the same namespace (`order`)
    - Verify service names match exactly
 
 3. **502 Bad Gateway:**
-   - Check if backend pods are running: `kubectl get pods -n orderflow`
-   - Check backend logs: `kubectl logs <backend-pod-name> -n orderflow`
+   - Check if backend pods are running: `kubectl get pods -n order`
+   - Check backend logs: `kubectl logs <backend-pod-name> -n order`
 
 4. **404 Not Found when accessing via IP:**
-   - **Problem:** Accessing `http://<IP>:<NODEPORT>` sends the IP as the Host header, but ingress expects `orderflow.local`
-   - **Solution:** Always use the domain name: `http://orderflow.local:<NODEPORT>`
-   - **Verify /etc/hosts:** Ensure `44.210.23.194 orderflow.local` is in your `/etc/hosts`
-   - **Test with curl:** `curl -H "Host: orderflow.local" http://44.210.23.194:31641/`
-   - **Browser:** Make sure you're typing `orderflow.local` in the address bar, not the IP
+   - **Problem:** Accessing `http://<IP>:<NODEPORT>` sends the IP as the Host header, but ingress expects `order.local`
+   - **Solution:** Always use the domain name: `http://order.local:<NODEPORT>`
+   - **Verify /etc/hosts:** Ensure `44.210.23.194 order.local` is in your `/etc/hosts`
+   - **Test with curl:** `curl -H "Host: order.local" http://44.210.23.194:31641/`
+   - **Browser:** Make sure you're typing `order.local` in the address bar, not the IP
 
 5. **Connection refused:**
    - Verify NodePort is correct
@@ -390,7 +390,7 @@ kubectl port-forward svc/backend 8081:8080 -n orderflow
    - **Firefox DNS over HTTPS issue:** Firefox with DoH enabled bypasses `/etc/hosts`
    - **Solution 1:** Disable DNS over HTTPS in Firefox (`about:preferences#privacy`)
    - **Solution 2:** Use browser extension (FlexHeaders, Modify Headers, or ModHeader)
-     - Add header: `Host: orderflow.local`
+     - Add header: `Host: order.local`
      - Access via IP: `http://<WORKER_NODE_IP>:<NODEPORT>`
    - **Solution 3:** Try a different browser (Chrome, Safari, Edge)
    - **Solution 4:** Clear browser cache and try again
@@ -428,14 +428,14 @@ kubectl get svc -n ingress-nginx
 kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}'
 
 # Check ingress
-kubectl get ingress -n orderflow
-kubectl describe ingress orderflow-ingress -n orderflow
+kubectl get ingress -n order
+kubectl describe ingress order-ingress -n order
 
 # Check services
-kubectl get svc -n orderflow
+kubectl get svc -n order
 
 # Check pods
-kubectl get pods -n orderflow
+kubectl get pods -n order
 
 # View logs
 kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=50
@@ -444,7 +444,7 @@ kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=5
 curl post command 
 
 
-curl -X POST -H "Host: orderflow.local" \
+curl -X POST -H "Host: order.local" \
      -H "Content-Type: application/json" \
      -d '{"accountId":"ac-001","items":[{"productId":"prod-1","quantity":2,"price":29.99}],"shippingAddress":"123 Main St, New York, NY 10001","paymentMethod":"pmt-001"}' \
      http://172.31.66.159:32095/api/v1/orders
@@ -452,4 +452,4 @@ curl -X POST -H "Host: orderflow.local" \
 
      check if tabe exist 
 
-   kubectl exec -n orderflow $(kubectl get pods -n orderflow -l app=postgres -o jsonpath='{.items[0].metadata.name}') -- psql -U orderuser -d orders -c "\dt"
+   kubectl exec -n order $(kubectl get pods -n order -l app=postgres -o jsonpath='{.items[0].metadata.name}') -- psql -U orderuser -d orders -c "\dt"

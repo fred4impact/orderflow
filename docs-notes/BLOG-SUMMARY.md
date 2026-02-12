@@ -1,14 +1,14 @@
-# Deploying OrderFlow: A Complete Kubernetes Journey on AWS EC2
+# Deploying order: A Complete Kubernetes Journey on AWS EC2
 
 ## 📋 Executive Summary
 
-This blog documents the end-to-end deployment of **OrderFlow**, a production-ready order management platform, on a self-managed Kubernetes cluster running on AWS EC2 instances. This project demonstrates real-world DevOps practices, from containerization to GitOps, providing hands-on experience with Kubernetes internals that directly translates to managed services like EKS.
+This blog documents the end-to-end deployment of **order**, a production-ready order management platform, on a self-managed Kubernetes cluster running on AWS EC2 instances. This project demonstrates real-world DevOps practices, from containerization to GitOps, providing hands-on experience with Kubernetes internals that directly translates to managed services like EKS.
 
 ---
 
-## 🎯 About OrderFlow Application
+## 🎯 About order Application
 
-**OrderFlow** is a comprehensive, full-stack order management platform designed for modern e-commerce and business operations. It provides a complete solution from order creation to fulfillment, with enterprise-grade DevOps practices built-in.
+**order** is a comprehensive, full-stack order management platform designed for modern e-commerce and business operations. It provides a complete solution from order creation to fulfillment, with enterprise-grade DevOps practices built-in.
 
 ### Application Architecture
 
@@ -274,18 +274,18 @@ kubectl get nodes
 ```bash
 # Build backend image
 cd backend
-docker build -t <dockerhub-user>/orderflow-backend:1.0 .
-docker push <dockerhub-user>/orderflow-backend:1.0
+docker build -t <dockerhub-user>/order-backend:1.0 .
+docker push <dockerhub-user>/order-backend:1.0
 
 # Build frontend image
 cd frontend
-docker build -t <dockerhub-user>/orderflow-frontend:1.0 .
-docker push <dockerhub-user>/orderflow-frontend:1.0
+docker build -t <dockerhub-user>/order-frontend:1.0 .
+docker push <dockerhub-user>/order-frontend:1.0
 ```
 
 #### Step 2: Create Namespace
 ```bash
-kubectl create namespace orderflow
+kubectl create namespace order
 ```
 
 #### Step 3: Deploy Database
@@ -301,7 +301,7 @@ kubectl apply -f backend.yaml
 kubectl apply -f backend-service.yaml
 
 # Verify deployment
-kubectl logs deploy/backend -n orderflow
+kubectl logs deploy/backend -n order
 ```
 
 #### Step 5: Deploy Frontend
@@ -337,14 +337,14 @@ kubectl get svc -n ingress-nginx
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: orderflow-ingress
-  namespace: orderflow
+  name: order-ingress
+  namespace: order
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
-    - host: orderflow.local
+    - host: order.local
       http:
         paths:
           - path: /
@@ -373,10 +373,10 @@ kubectl get nodes -o wide
 
 # Add to /etc/hosts (on local machine)
 sudo vi /etc/hosts
-# Add: <WORKER_PUBLIC_IP> orderflow.local
+# Add: <WORKER_PUBLIC_IP> order.local
 
 # Access application
-http://orderflow.local:<NODEPORT>
+http://order.local:<NODEPORT>
 ```
 
 ### Phase 4: Monitoring with Prometheus and Grafana
@@ -493,7 +493,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: grafana.orderflow.local
+  - host: grafana.order.local
     http:
       paths:
       - path: /
@@ -505,7 +505,7 @@ spec:
               number: 80
 EOF
 
-# Access via: http://grafana.orderflow.local:<INGRESS_NODEPORT>
+# Access via: http://grafana.order.local:<INGRESS_NODEPORT>
 ```
 
 #### Step 5: Access Prometheus
@@ -517,7 +517,7 @@ kubectl port-forward svc/prometheus-kube-prometheus-prometheus -n monitoring 909
 # Access Prometheus at http://localhost:9090
 ```
 
-#### Step 6: Configure ServiceMonitor for OrderFlow Backend
+#### Step 6: Configure ServiceMonitor for order Backend
 
 To scrape metrics from your Spring Boot backend, create a ServiceMonitor:
 
@@ -527,8 +527,8 @@ cat <<EOF | kubectl apply -f -
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: orderflow-backend
-  namespace: orderflow
+  name: order-backend
+  namespace: order
   labels:
     release: prometheus
 spec:
@@ -596,15 +596,15 @@ DASHBOARDS=(7249 11378 4701 1860 6417)
 # Or use Grafana API (advanced)
 ```
 
-#### Step 8: Create Custom OrderFlow Dashboard
+#### Step 8: Create Custom order Dashboard
 
-Create a custom dashboard for OrderFlow-specific metrics:
+Create a custom dashboard for order-specific metrics:
 
 ```json
 {
   "dashboard": {
-    "title": "OrderFlow Application Metrics",
-    "tags": ["orderflow", "spring-boot"],
+    "title": "order Application Metrics",
+    "tags": ["order", "spring-boot"],
     "timezone": "browser",
     "panels": [
       {
@@ -613,7 +613,7 @@ Create a custom dashboard for OrderFlow-specific metrics:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(http_server_requests_seconds_count{application=\"orderflow-backend\"}[5m])",
+            "expr": "rate(http_server_requests_seconds_count{application=\"order-backend\"}[5m])",
             "legendFormat": "{{uri}} {{method}}",
             "refId": "A"
           }
@@ -631,7 +631,7 @@ Create a custom dashboard for OrderFlow-specific metrics:
         "type": "graph",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application=\"orderflow-backend\"}[5m]))",
+            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application=\"order-backend\"}[5m]))",
             "legendFormat": "95th percentile",
             "refId": "A"
           }
@@ -649,7 +649,7 @@ Create a custom dashboard for OrderFlow-specific metrics:
         "type": "graph",
         "targets": [
           {
-            "expr": "jvm_memory_used_bytes{application=\"orderflow-backend\"}",
+            "expr": "jvm_memory_used_bytes{application=\"order-backend\"}",
             "legendFormat": "{{area}}",
             "refId": "A"
           }
@@ -667,7 +667,7 @@ Create a custom dashboard for OrderFlow-specific metrics:
         "type": "stat",
         "targets": [
           {
-            "expr": "orderflow_orders_active_total",
+            "expr": "order_orders_active_total",
             "refId": "A"
           }
         ]
@@ -678,7 +678,7 @@ Create a custom dashboard for OrderFlow-specific metrics:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(http_server_requests_seconds_count{application=\"orderflow-backend\",status=~\"5..\"}[5m])",
+            "expr": "rate(http_server_requests_seconds_count{application=\"order-backend\",status=~\"5..\"}[5m])",
             "legendFormat": "5xx Errors",
             "refId": "A"
           }
@@ -701,29 +701,29 @@ Create a custom dashboard for OrderFlow-specific metrics:
 
 #### Step 9: Useful Prometheus Queries
 
-Common Prometheus queries for monitoring OrderFlow:
+Common Prometheus queries for monitoring order:
 
 ```promql
 # HTTP Request Rate
-rate(http_server_requests_seconds_count{application="orderflow-backend"}[5m])
+rate(http_server_requests_seconds_count{application="order-backend"}[5m])
 
 # Error Rate (5xx)
-rate(http_server_requests_seconds_count{application="orderflow-backend",status=~"5.."}[5m])
+rate(http_server_requests_seconds_count{application="order-backend",status=~"5.."}[5m])
 
 # Response Time (95th percentile)
-histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="orderflow-backend"}[5m]))
+histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="order-backend"}[5m]))
 
 # JVM Memory Used
-jvm_memory_used_bytes{application="orderflow-backend"}
+jvm_memory_used_bytes{application="order-backend"}
 
 # CPU Usage
-rate(process_cpu_seconds_total{application="orderflow-backend"}[5m])
+rate(process_cpu_seconds_total{application="order-backend"}[5m])
 
 # Pod CPU Usage
-rate(container_cpu_usage_seconds_total{namespace="orderflow"}[5m])
+rate(container_cpu_usage_seconds_total{namespace="order"}[5m])
 
 # Pod Memory Usage
-container_memory_usage_bytes{namespace="orderflow"}
+container_memory_usage_bytes{namespace="order"}
 
 # Kubernetes Node CPU
 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
@@ -810,7 +810,7 @@ helm install prometheus prometheus-community/kube-prometheus-stack \
 
 ```bash
 # Check ServiceMonitor is created
-kubectl get servicemonitor -n orderflow
+kubectl get servicemonitor -n order
 
 # Check Prometheus targets
 # Access Prometheus UI → Status → Targets
@@ -821,7 +821,7 @@ kubectl get servicemonitor -n orderflow
 
 ```bash
 # Test metrics endpoint directly
-kubectl port-forward svc/backend -n orderflow 8080:8080
+kubectl port-forward svc/backend -n order 8080:8080
 curl http://localhost:8080/actuator/prometheus
 ```
 
@@ -934,10 +934,10 @@ curl http://localhost:8080/actuator/prometheus
   - `kubectl get events` for cluster events
 
 **Debugging Workflow**:
-1. Check pod status: `kubectl get pods -n orderflow`
-2. Describe pod: `kubectl describe pod <pod-name> -n orderflow`
-3. Check logs: `kubectl logs <pod-name> -n orderflow`
-4. Check events: `kubectl get events -n orderflow --sort-by='.lastTimestamp'`
+1. Check pod status: `kubectl get pods -n order`
+2. Describe pod: `kubectl describe pod <pod-name> -n order`
+3. Check logs: `kubectl logs <pod-name> -n order`
+4. Check events: `kubectl get events -n order --sort-by='.lastTimestamp'`
 5. Test connectivity: `kubectl port-forward` for direct testing
 
 ### 7. Production Readiness
@@ -1155,4 +1155,4 @@ The combination of modern application stack (Spring Boot + React), containerizat
 
 ---
 
-*This blog post documents a real-world DevOps learning journey. All steps, challenges, and solutions are based on actual experience deploying OrderFlow on AWS EC2 with self-managed Kubernetes.*
+*This blog post documents a real-world DevOps learning journey. All steps, challenges, and solutions are based on actual experience deploying order on AWS EC2 with self-managed Kubernetes.*

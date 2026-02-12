@@ -1,25 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: orderflow
+  name: order
   namespace: argocd
   # Optional: Add labels for better organization
   labels:
-    app: orderflow
+    app: order
     environment: production
 spec:
   project: default
   
   # Source: Git repository containing Kubernetes manifests
   source:
-    repoURL: https://github.com/fred4impact/orderflow.git  # TODO: Replace with your Git repository URL
-    targetRevision: master  # Branch name (main, master, etc.)
+    repoURL: https://github.com/fred4impact/order.git  # TODO: Replace with your Git repository URL
+    targetRevision: feature-k8s  # Branch name (main, master, etc.)
     path: k8s  # Path to manifests directory in the repository
   
   # Destination: Where to deploy the application
   destination:
     server: https://kubernetes.default.svc  # Current cluster
-    namespace: orderflow  # Target namespace
+    namespace: order  # Target namespace
   
   # Sync Policy: Configure automatic synchronization
   syncPolicy:
